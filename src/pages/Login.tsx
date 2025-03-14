@@ -12,6 +12,7 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -26,10 +27,28 @@ const Login = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
     
-    // Simulate login with a timeout
+    // Get registered users from localStorage
+    const registeredUsers = JSON.parse(localStorage.getItem("fakefinder_users") || "[]");
+    
+    // Check if user exists and password matches
+    const user = registeredUsers.find((u: any) => u.email === email);
+    
+    if (!user) {
+      setError("User not found. Please sign up first.");
+      setIsLoading(false);
+      return;
+    }
+    
+    if (user.password !== password) {
+      setError("Invalid password. Please try again.");
+      setIsLoading(false);
+      return;
+    }
+    
+    // Simulate login delay
     setTimeout(() => {
-      // In a real app, you would verify credentials with a backend
       localStorage.setItem("fakefinder_user", JSON.stringify({ email }));
       localStorage.setItem("fakefinder_isLoggedIn", "true");
       
@@ -39,7 +58,7 @@ const Login = () => {
         description: "You've successfully logged in.",
       });
       navigate("/dashboard");
-    }, 1500);
+    }, 1000);
   };
 
   return (
@@ -52,6 +71,11 @@ const Login = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {error && (
+            <div className="p-3 rounded-md bg-red-50 text-red-700 text-sm">
+              {error}
+            </div>
+          )}
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Input
@@ -96,12 +120,9 @@ const Login = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2">
             <Button variant="outline" type="button" className="w-full">
               Google
-            </Button>
-            <Button variant="outline" type="button" className="w-full">
-              GitHub
             </Button>
           </div>
         </CardContent>

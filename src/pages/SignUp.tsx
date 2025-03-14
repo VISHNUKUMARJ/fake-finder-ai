@@ -13,18 +13,25 @@ const SignUp = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     
     if (password !== confirmPassword) {
-      toast({
-        variant: "destructive",
-        title: "Passwords don't match",
-        description: "Please make sure your passwords match.",
-      });
+      setError("Passwords don't match");
+      return;
+    }
+
+    // Get existing users
+    const existingUsers = JSON.parse(localStorage.getItem("fakefinder_users") || "[]");
+    
+    // Check if user already exists
+    if (existingUsers.some((user: any) => user.email === email)) {
+      setError("A user with this email already exists");
       return;
     }
 
@@ -32,8 +39,13 @@ const SignUp = () => {
     
     // Simulate account creation with a timeout
     setTimeout(() => {
-      // Store user info in localStorage for demo purposes
-      // In a real app, you would use a proper auth system
+      // Add new user to users array
+      const updatedUsers = [...existingUsers, { email, password }];
+      
+      // Store users array in localStorage
+      localStorage.setItem("fakefinder_users", JSON.stringify(updatedUsers));
+      
+      // Store current user info and login status
       localStorage.setItem("fakefinder_user", JSON.stringify({ email }));
       localStorage.setItem("fakefinder_isLoggedIn", "true");
       
@@ -56,6 +68,11 @@ const SignUp = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {error && (
+            <div className="p-3 rounded-md bg-red-50 text-red-700 text-sm">
+              {error}
+            </div>
+          )}
           <form onSubmit={handleSignUp} className="space-y-4">
             <div className="space-y-2">
               <Input
@@ -106,12 +123,9 @@ const SignUp = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2">
             <Button variant="outline" type="button" className="w-full">
               Google
-            </Button>
-            <Button variant="outline" type="button" className="w-full">
-              GitHub
             </Button>
           </div>
         </CardContent>
