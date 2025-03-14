@@ -4,7 +4,6 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/use-toast";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 
@@ -108,23 +107,6 @@ const Login = () => {
               {isLoading ? "Logging in..." : "Login"}
             </Button>
           </form>
-          
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <Separator className="w-full" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or continue with
-              </span>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 gap-2">
-            <Button variant="outline" type="button" className="w-full">
-              Google
-            </Button>
-          </div>
         </CardContent>
         <CardFooter className="justify-center">
           <p className="text-sm text-muted-foreground">

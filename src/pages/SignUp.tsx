@@ -4,11 +4,11 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/use-toast";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 
 const SignUp = () => {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -40,13 +40,13 @@ const SignUp = () => {
     // Simulate account creation with a timeout
     setTimeout(() => {
       // Add new user to users array
-      const updatedUsers = [...existingUsers, { email, password }];
+      const updatedUsers = [...existingUsers, { name, email, password, searchHistory: [] }];
       
       // Store users array in localStorage
       localStorage.setItem("fakefinder_users", JSON.stringify(updatedUsers));
       
       // Store current user info and login status
-      localStorage.setItem("fakefinder_user", JSON.stringify({ email }));
+      localStorage.setItem("fakefinder_user", JSON.stringify({ name, email }));
       localStorage.setItem("fakefinder_isLoggedIn", "true");
       
       setIsLoading(false);
@@ -64,7 +64,7 @@ const SignUp = () => {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Create an account</CardTitle>
           <CardDescription className="text-center">
-            Enter your email and password below to create your account
+            Enter your details below to create your account
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -74,6 +74,17 @@ const SignUp = () => {
             </div>
           )}
           <form onSubmit={handleSignUp} className="space-y-4">
+            <div className="space-y-2">
+              <Input
+                id="name"
+                type="text"
+                placeholder="Full Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="w-full"
+              />
+            </div>
             <div className="space-y-2">
               <Input
                 id="email"
@@ -111,23 +122,6 @@ const SignUp = () => {
               {isLoading ? "Creating account..." : "Sign up"}
             </Button>
           </form>
-          
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <Separator className="w-full" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or continue with
-              </span>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 gap-2">
-            <Button variant="outline" type="button" className="w-full">
-              Google
-            </Button>
-          </div>
         </CardContent>
         <CardFooter className="justify-center">
           <p className="text-sm text-muted-foreground">
