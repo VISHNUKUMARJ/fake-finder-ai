@@ -7,50 +7,184 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CheckCircle2, XCircle, AlertTriangle, Info } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { addToSearchHistory } from "@/utils/historyManager";
+
+// Text detection methods
+const detectionMethods = [
+  { name: "Statistical Pattern Analysis", weight: 0.2 },
+  { name: "Perplexity Measurement", weight: 0.2 },
+  { name: "Stylometric Analysis", weight: 0.3 },
+  { name: "Semantic Consistency Check", weight: 0.3 }
+];
+
+// Simulated text features to analyze
+const textFeatures = [
+  { name: "Repeated Phrases", humanRange: [0, 30], aiRange: [20, 75] },
+  { name: "Sentence Complexity", humanRange: [40, 90], aiRange: [60, 95] },
+  { name: "Linguistic Diversity", humanRange: [50, 95], aiRange: [20, 70] },
+  { name: "Contextual Coherence", humanRange: [60, 95], aiRange: [30, 85] },
+  { name: "Factual Consistency", humanRange: [70, 95], aiRange: [30, 80] }
+];
 
 const TextDetection = () => {
   const [text, setText] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [activeMethod, setActiveMethod] = useState("");
+  const [methodResults, setMethodResults] = useState<Record<string, { score: number, complete: boolean }>>({});
+  const [featureScores, setFeatureScores] = useState<Record<string, number>>({});
   const [result, setResult] = useState<null | {
     isAIGenerated: boolean;
     confidenceScore: number;
     humanScore: number;
     detailsText: string;
   }>(null);
+  const { toast } = useToast();
 
-  const handleAnalyze = () => {
-    if (!text.trim()) return;
+  const simulateMethodAnalysis = (methodName: string, duration: number) => {
+    return new Promise<number>((resolve) => {
+      setActiveMethod(methodName);
+      
+      // Simulate method-specific analysis
+      const interval = setInterval(() => {
+        setMethodResults(prev => {
+          const methodProgress = prev[methodName]?.score + (100 / (duration / 100)) || 0;
+          if (methodProgress >= 100) {
+            clearInterval(interval);
+            return {
+              ...prev,
+              [methodName]: { score: 100, complete: true }
+            };
+          }
+          return {
+            ...prev,
+            [methodName]: { ...prev[methodName], score: methodProgress }
+          };
+        });
+      }, 100);
+      
+      // Resolve after the duration with an AI probability score
+      setTimeout(() => {
+        const aiProbabilityScore = Math.random() * 100;
+        resolve(aiProbabilityScore);
+      }, duration);
+    });
+  };
+
+  // Analyze specific text features and generate scores
+  const analyzeTextFeatures = () => {
+    const simulatedScores: Record<string, number> = {};
+    
+    textFeatures.forEach(feature => {
+      // Generate a score that's more likely to be in the AI range (for simulation)
+      // This would be replaced with actual NLP analysis in a real implementation
+      const isAIGenerated = Math.random() > 0.5;
+      const range = isAIGenerated ? feature.aiRange : feature.humanRange;
+      simulatedScores[feature.name] = Math.floor(Math.random() * (range[1] - range[0])) + range[0];
+    });
+    
+    setFeatureScores(simulatedScores);
+    return simulatedScores;
+  };
+
+  const runAllMethods = async () => {
+    // Initialize method results
+    detectionMethods.forEach(method => {
+      setMethodResults(prev => ({
+        ...prev,
+        [method.name]: { score: 0, complete: false }
+      }));
+    });
+    
+    // Analyze text features first
+    const features = analyzeTextFeatures();
+    
+    // Run statistical analysis
+    const statisticalScore = await simulateMethodAnalysis("Statistical Pattern Analysis", 1200);
+    
+    // Run perplexity measurement
+    const perplexityScore = await simulateMethodAnalysis("Perplexity Measurement", 1000);
+    
+    // Run stylometric analysis
+    const stylometricScore = await simulateMethodAnalysis("Stylometric Analysis", 1500);
+    
+    // Run semantic consistency check
+    const semanticScore = await simulateMethodAnalysis("Semantic Consistency Check", 1300);
+    
+    // Calculate average of feature scores for AI indicators
+    const featureAvgScore = Object.values(features).reduce((sum, score) => sum + score, 0) / 
+      Object.values(features).length;
+    
+    // Weight and combine all scores
+    const finalScore = (
+      statisticalScore * 0.2 + 
+      perplexityScore * 0.2 + 
+      stylometricScore * 0.3 + 
+      semanticScore * 0.3
+    );
+    
+    // Determine if AI generated (score above 65 indicates AI generation)
+    const isAIGenerated = finalScore > 65;
+    
+    // Create result
+    setResult({
+      isAIGenerated,
+      confidenceScore: Math.round(finalScore),
+      humanScore: Math.round(100 - finalScore),
+      detailsText: isAIGenerated
+        ? `This text shows patterns consistent with AI-generated content. The analysis found statistical patterns and writing style indicators that match known AI writing styles with ${Math.round(finalScore)}% confidence.`
+        : `This text appears to be human-written based on our analysis. The content shows natural language patterns consistent with human writing with ${Math.round(100 - finalScore)}% confidence.`,
+    });
+    
+    // Add to search history
+    addToSearchHistory({
+      type: 'text',
+      textSnippet: text.length > 50 ? text.substring(0, 50) + '...' : text,
+      result: isAIGenerated,
+      confidenceScore: Math.round(finalScore),
+    });
+    
+    // Show toast notification
+    toast({
+      title: "Analysis Complete",
+      description: `Text analysis complete with ${Math.round(finalScore)}% AI probability.`,
+    });
+  };
+
+  const handleAnalyze = async () => {
+    if (text.trim().length < 100) return;
     
     setIsAnalyzing(true);
     setProgress(0);
+    setFeatureScores({});
     
-    // Simulate analysis process with progress updates
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          
-          // Simulate an analysis result
-          const isAIGenerated = Math.random() > 0.5;
-          const confidenceScore = Math.floor(Math.random() * 30) + (isAIGenerated ? 70 : 20);
-          const humanScore = 100 - confidenceScore;
-          
-          setResult({
-            isAIGenerated,
-            confidenceScore,
-            humanScore,
-            detailsText: isAIGenerated
-              ? "This text shows patterns consistent with AI-generated content. The analysis found statistical patterns that match known AI writing styles."
-              : "This text appears to be human-written based on our analysis. The content shows natural language patterns consistent with human writing.",
-          });
-          
-          setIsAnalyzing(false);
-          return 100;
-        }
-        return prev + 10;
+    // Track overall progress
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        const newProgress = Object.values(methodResults).reduce(
+          (sum, method) => sum + (method.score / detectionMethods.length),
+          0
+        );
+        return Math.min(Math.round(newProgress), 99); // Cap at 99% until complete
       });
-    }, 300);
+    }, 100);
+    
+    try {
+      await runAllMethods();
+      setProgress(100);
+    } catch (error) {
+      console.error("Analysis error:", error);
+      toast({
+        variant: "destructive",
+        title: "Analysis Failed",
+        description: "There was an error analyzing the text."
+      });
+    } finally {
+      clearInterval(progressInterval);
+      setIsAnalyzing(false);
+      setActiveMethod("");
+    }
   };
 
   const renderResultAlert = () => {
@@ -89,6 +223,31 @@ const TextDetection = () => {
                 <p className="mt-1 text-sm text-right">{humanScore}%</p>
               </div>
             </div>
+            
+            {/* Feature analysis chart */}
+            {Object.keys(featureScores).length > 0 && (
+              <div className="mt-5">
+                <p className="text-sm font-medium mb-2">Text Feature Analysis</p>
+                {textFeatures.map((feature) => (
+                  <div key={feature.name} className="mb-2">
+                    <div className="flex justify-between text-xs">
+                      <span>{feature.name}</span>
+                      <span className={featureScores[feature.name] > 60 ? 'text-orange-500' : 'text-green-500'}>
+                        {featureScores[feature.name]}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mt-1">
+                      <div 
+                        className={`h-1.5 rounded-full ${
+                          featureScores[feature.name] > 60 ? 'bg-orange-500' : 'bg-green-500'
+                        }`}
+                        style={{ width: `${featureScores[feature.name]}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </AlertDescription>
         </Alert>
       );
@@ -124,6 +283,31 @@ const TextDetection = () => {
               <p className="mt-1 text-sm text-right">{humanScore}%</p>
             </div>
           </div>
+          
+          {/* Feature analysis chart */}
+          {Object.keys(featureScores).length > 0 && (
+            <div className="mt-5">
+              <p className="text-sm font-medium mb-2">Text Feature Analysis</p>
+              {textFeatures.map((feature) => (
+                <div key={feature.name} className="mb-2">
+                  <div className="flex justify-between text-xs">
+                    <span>{feature.name}</span>
+                    <span className={featureScores[feature.name] > 60 ? 'text-orange-500' : 'text-green-500'}>
+                      {featureScores[feature.name]}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mt-1">
+                    <div 
+                      className={`h-1.5 rounded-full ${
+                        featureScores[feature.name] > 60 ? 'bg-orange-500' : 'bg-green-500'
+                      }`}
+                      style={{ width: `${featureScores[feature.name]}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </AlertDescription>
       </Alert>
     );
@@ -170,6 +354,26 @@ const TextDetection = () => {
                 <p className="text-center text-sm text-muted-foreground">
                   Analyzing text... {progress}%
                 </p>
+                
+                {/* Analysis methods progress */}
+                <div className="space-y-2 mt-4">
+                  {detectionMethods.map((method) => (
+                    <div key={method.name} className="space-y-1">
+                      <div className="flex justify-between text-xs">
+                        <span className={`${activeMethod === method.name ? 'font-bold text-primary' : ''}`}>
+                          {method.name}
+                        </span>
+                        <span>
+                          {methodResults[method.name]?.score.toFixed(0)}%
+                        </span>
+                      </div>
+                      <Progress 
+                        value={methodResults[method.name]?.score || 0}
+                        className={`h-1 ${activeMethod === method.name ? 'bg-primary/20' : 'bg-gray-100 dark:bg-gray-800'}`}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
             

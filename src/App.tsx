@@ -16,7 +16,14 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60 * 1000, // 1 minute
+      retry: 1,
+    },
+  },
+});
 
 // Initialize theme from localStorage
 const initializeTheme = () => {
@@ -26,6 +33,17 @@ const initializeTheme = () => {
   } else {
     document.documentElement.classList.remove("dark");
   }
+};
+
+// Protected route wrapper component
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const isAuthenticated = localStorage.getItem("fakefinder_isLoggedIn") === "true";
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+  
+  return <>{children}</>;
 };
 
 const App = () => {
@@ -48,13 +66,41 @@ const App = () => {
             <Route path="/signup" element={<SignUp />} />
             
             {/* Protected routes */}
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/image-detection" element={<ImageDetection />} />
-            <Route path="/video-detection" element={<VideoDetection />} />
-            <Route path="/text-detection" element={<TextDetection />} />
-            <Route path="/audio-detection" element={<AudioDetection />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/settings" element={<Settings />} />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/image-detection" element={
+              <ProtectedRoute>
+                <ImageDetection />
+              </ProtectedRoute>
+            } />
+            <Route path="/video-detection" element={
+              <ProtectedRoute>
+                <VideoDetection />
+              </ProtectedRoute>
+            } />
+            <Route path="/text-detection" element={
+              <ProtectedRoute>
+                <TextDetection />
+              </ProtectedRoute>
+            } />
+            <Route path="/audio-detection" element={
+              <ProtectedRoute>
+                <AudioDetection />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            } />
             
             {/* Redirect to login if not authenticated, otherwise to dashboard */}
             <Route path="/" element={
