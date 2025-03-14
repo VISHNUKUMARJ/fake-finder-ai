@@ -9,7 +9,9 @@ import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
 import ImageDetection from "./pages/ImageDetection";
+import VideoDetection from "./pages/VideoDetection";
 import TextDetection from "./pages/TextDetection";
+import AudioDetection from "./pages/AudioDetection";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
@@ -48,7 +50,9 @@ const App = () => {
             {/* Protected routes */}
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/image-detection" element={<ImageDetection />} />
+            <Route path="/video-detection" element={<VideoDetection />} />
             <Route path="/text-detection" element={<TextDetection />} />
+            <Route path="/audio-detection" element={<AudioDetection />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
             
