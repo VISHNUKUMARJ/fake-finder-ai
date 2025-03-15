@@ -19,25 +19,41 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate login process
+    // Get all users from localStorage
+    const usersString = localStorage.getItem("fakefinder_users");
+    const users = usersString ? JSON.parse(usersString) : [];
+    
+    // Find the user with the provided email
+    const user = users.find((u: any) => u.email === email);
+    
     setTimeout(() => {
-      // For demo purposes, any login succeeds
-      localStorage.setItem("fakefinder_isLoggedIn", "true");
-      localStorage.setItem("fakefinder_user", JSON.stringify({
-        id: "user-123",
-        name: "John Doe",
-        email: email,
-        avatar: null
-      }));
-      
-      toast({
-        title: "Login successful",
-        description: "Welcome back to FakeFinder AI!",
-      });
+      if (user && user.password === password) {
+        // Valid credentials - log the user in
+        localStorage.setItem("fakefinder_isLoggedIn", "true");
+        localStorage.setItem("fakefinder_user", JSON.stringify({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          avatar: user.avatar || null
+        }));
+        
+        toast({
+          title: "Login successful",
+          description: `Welcome back, ${user.name}!`,
+        });
+        
+        navigate("/dashboard");
+      } else {
+        // Invalid credentials
+        toast({
+          title: "Login failed",
+          description: "Invalid email or password. Please try again.",
+          variant: "destructive",
+        });
+      }
       
       setIsLoading(false);
-      navigate("/dashboard");
-    }, 1500);
+    }, 1000);
   };
 
   return (

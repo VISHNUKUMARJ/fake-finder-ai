@@ -33,13 +33,44 @@ const SignUp = () => {
     
     // Simulate registration process
     setTimeout(() => {
-      // For demo purposes, any registration succeeds
-      localStorage.setItem("fakefinder_isLoggedIn", "true");
-      localStorage.setItem("fakefinder_user", JSON.stringify({
+      // Generate a new user object
+      const newUser = {
         id: "user-" + Date.now(),
         name: name,
         email: email,
-        avatar: null
+        password: password, // In a real app, this should be hashed
+        avatar: null,
+        createdAt: new Date().toISOString()
+      };
+      
+      // Get existing users from localStorage
+      const usersString = localStorage.getItem("fakefinder_users");
+      const existingUsers = usersString ? JSON.parse(usersString) : [];
+      
+      // Check if email already exists
+      const emailExists = existingUsers.some((user: any) => user.email === email);
+      
+      if (emailExists) {
+        toast({
+          title: "Email already in use",
+          description: "Please use a different email address or log in.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      // Add new user to the array and save back to localStorage
+      const updatedUsers = [...existingUsers, newUser];
+      localStorage.setItem("fakefinder_users", JSON.stringify(updatedUsers));
+      
+      // Also log the user in
+      localStorage.setItem("fakefinder_isLoggedIn", "true");
+      localStorage.setItem("fakefinder_user", JSON.stringify({
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        avatar: newUser.avatar
       }));
       
       toast({
