@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, createContext, useContext } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,79 @@ import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Moon, Sun, Languages, LogOut } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+
+// Define the LanguageContext
+export const LanguageContext = createContext<{
+  language: string;
+  setLanguage: (language: string) => void;
+  translate: (key: string) => string;
+}>({
+  language: 'english',
+  setLanguage: () => {},
+  translate: (key) => key,
+});
+
+// Translations
+const translations: Record<string, Record<string, string>> = {
+  english: {
+    appearance: "Appearance",
+    customizeAppearance: "Customize how FakeFinder looks on your device",
+    darkMode: "Dark Mode",
+    switchThemes: "Switch between light and dark themes",
+    language: "Language",
+    chooseLanguage: "Choose your preferred language",
+    displayLanguage: "Display Language",
+    selectLanguage: "Select your preferred language",
+    account: "Account",
+    manageAccount: "Manage your account settings",
+    logout: "Logout",
+    loggedOut: "Logged out",
+    loggedOutMessage: "You've been successfully logged out.",
+    languageUpdated: "Language updated",
+    languageSetTo: "Language set to",
+    themeUpdated: "Theme updated",
+    themeSetTo: "Theme set to",
+  },
+  spanish: {
+    appearance: "Apariencia",
+    customizeAppearance: "Personaliza cómo se ve FakeFinder en tu dispositivo",
+    darkMode: "Modo Oscuro",
+    switchThemes: "Alterna entre temas claros y oscuros",
+    language: "Idioma",
+    chooseLanguage: "Elige tu idioma preferido",
+    displayLanguage: "Idioma de Visualización",
+    selectLanguage: "Selecciona tu idioma preferido",
+    account: "Cuenta",
+    manageAccount: "Administra la configuración de tu cuenta",
+    logout: "Cerrar Sesión",
+    loggedOut: "Sesión cerrada",
+    loggedOutMessage: "Has cerrado sesión correctamente.",
+    languageUpdated: "Idioma actualizado",
+    languageSetTo: "Idioma establecido en",
+    themeUpdated: "Tema actualizado",
+    themeSetTo: "Tema establecido en",
+  },
+  french: {
+    appearance: "Apparence",
+    customizeAppearance: "Personnalisez l'apparence de FakeFinder sur votre appareil",
+    darkMode: "Mode Sombre",
+    switchThemes: "Basculer entre les thèmes clair et sombre",
+    language: "Langue",
+    chooseLanguage: "Choisissez votre langue préférée",
+    displayLanguage: "Langue d'Affichage",
+    selectLanguage: "Sélectionnez votre langue préférée",
+    account: "Compte",
+    manageAccount: "Gérez les paramètres de votre compte",
+    logout: "Déconnexion",
+    loggedOut: "Déconnecté",
+    loggedOutMessage: "Vous avez été déconnecté avec succès.",
+    languageUpdated: "Langue mise à jour",
+    languageSetTo: "Langue définie sur",
+    themeUpdated: "Thème mis à jour",
+    themeSetTo: "Thème défini sur",
+  },
+  // Add other languages as needed
+};
 
 // Create a ThemeProvider component
 const createThemeManager = () => {
@@ -29,10 +102,35 @@ const createThemeManager = () => {
   return { getTheme, setTheme };
 };
 
+// Create a LanguageProvider component
+export const LanguageProvider = ({ children }: { children: React.ReactNode }) => {
+  const [language, setLanguageState] = useState<string>(
+    localStorage.getItem("fakefinder_language") || "english"
+  );
+
+  const setLanguage = (newLanguage: string) => {
+    localStorage.setItem("fakefinder_language", newLanguage);
+    setLanguageState(newLanguage);
+  };
+
+  const translate = (key: string): string => {
+    return translations[language]?.[key] || translations.english[key] || key;
+  };
+
+  return (
+    <LanguageContext.Provider value={{ language, setLanguage, translate }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+};
+
+// Custom hook to use the language context
+export const useLanguage = () => useContext(LanguageContext);
+
 const Settings = () => {
   const themeManager = createThemeManager();
   const [theme, setTheme] = useState(themeManager.getTheme());
-  const [language, setLanguage] = useState(localStorage.getItem("fakefinder_language") || "english");
+  const { language, setLanguage, translate } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -46,17 +144,16 @@ const Settings = () => {
     setTheme(newTheme);
     themeManager.setTheme(newTheme);
     toast({
-      title: "Theme updated",
-      description: `Theme set to ${newTheme} mode`,
+      title: translate("themeUpdated"),
+      description: `${translate("themeSetTo")} ${newTheme} mode`,
     });
   };
   
   const handleLanguageChange = (value: string) => {
     setLanguage(value);
-    localStorage.setItem("fakefinder_language", value);
     toast({
-      title: "Language updated",
-      description: `Language set to ${value}`,
+      title: translate("languageUpdated"),
+      description: `${translate("languageSetTo")} ${value}`,
     });
   };
   
@@ -64,8 +161,8 @@ const Settings = () => {
     localStorage.removeItem("fakefinder_isLoggedIn");
     localStorage.removeItem("fakefinder_user");
     toast({
-      title: "Logged out",
-      description: "You've been successfully logged out.",
+      title: translate("loggedOut"),
+      description: translate("loggedOutMessage"),
     });
     navigate("/login");
   };
@@ -76,9 +173,9 @@ const Settings = () => {
         {/* Theme Settings */}
         <Card>
           <CardHeader>
-            <CardTitle>Appearance</CardTitle>
+            <CardTitle>{translate("appearance")}</CardTitle>
             <CardDescription>
-              Customize how FakeFinder looks on your device
+              {translate("customizeAppearance")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -93,10 +190,10 @@ const Settings = () => {
                 </div>
                 <div>
                   <Label htmlFor="theme-mode" className="text-base">
-                    Dark Mode
+                    {translate("darkMode")}
                   </Label>
                   <p className="text-sm text-muted-foreground">
-                    Switch between light and dark themes
+                    {translate("switchThemes")}
                   </p>
                 </div>
               </div>
@@ -112,9 +209,9 @@ const Settings = () => {
         {/* Language Settings */}
         <Card>
           <CardHeader>
-            <CardTitle>Language</CardTitle>
+            <CardTitle>{translate("language")}</CardTitle>
             <CardDescription>
-              Choose your preferred language
+              {translate("chooseLanguage")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -125,26 +222,26 @@ const Settings = () => {
                 </div>
                 <div>
                   <Label htmlFor="language-select" className="text-base">
-                    Display Language
+                    {translate("displayLanguage")}
                   </Label>
                   <p className="text-sm text-muted-foreground">
-                    Select your preferred language
+                    {translate("selectLanguage")}
                   </p>
                 </div>
               </div>
               <Select value={language} onValueChange={handleLanguageChange}>
                 <SelectTrigger className="w-[180px]" id="language-select">
-                  <SelectValue placeholder="Select language" />
+                  <SelectValue placeholder={translate("selectLanguage")} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="english">English</SelectItem>
-                  <SelectItem value="spanish">Spanish</SelectItem>
-                  <SelectItem value="french">French</SelectItem>
-                  <SelectItem value="german">German</SelectItem>
-                  <SelectItem value="chinese">Chinese</SelectItem>
-                  <SelectItem value="japanese">Japanese</SelectItem>
-                  <SelectItem value="arabic">Arabic</SelectItem>
-                  <SelectItem value="hindi">Hindi</SelectItem>
+                  <SelectItem value="spanish">Español</SelectItem>
+                  <SelectItem value="french">Français</SelectItem>
+                  <SelectItem value="german">Deutsch</SelectItem>
+                  <SelectItem value="chinese">中文</SelectItem>
+                  <SelectItem value="japanese">日本語</SelectItem>
+                  <SelectItem value="arabic">العربية</SelectItem>
+                  <SelectItem value="hindi">हिन्दी</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -154,9 +251,9 @@ const Settings = () => {
         {/* Account Settings */}
         <Card>
           <CardHeader>
-            <CardTitle>Account</CardTitle>
+            <CardTitle>{translate("account")}</CardTitle>
             <CardDescription>
-              Manage your account settings
+              {translate("manageAccount")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -169,7 +266,7 @@ const Settings = () => {
                   onClick={handleLogout}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  Logout
+                  {translate("logout")}
                 </Button>
               </div>
             </div>

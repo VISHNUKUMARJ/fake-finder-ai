@@ -4,12 +4,19 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { Mail, Calendar, Search, AlertCircle, ImageIcon, FileVideo, FileAudio, FileText, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Mail, Calendar, Search, AlertCircle, ImageIcon, FileVideo, FileAudio, FileText, AlertTriangle, CheckCircle2, Pencil, Upload } from "lucide-react";
 import { getSearchHistory, SearchHistoryItem } from "@/utils/historyManager";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/use-toast";
 
 const Profile = () => {
   const [userData, setUserData] = useState<any>(null);
   const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const { toast } = useToast();
   
   useEffect(() => {
     // Get current user data
@@ -20,6 +27,8 @@ const Profile = () => {
     const userWithHistory = allUsers.find((user: any) => user.email === currentUser.email) || {};
     
     setUserData(userWithHistory);
+    setNewName(userWithHistory.name || "");
+    setProfileImage(userWithHistory.profileImage || null);
     
     // Load search history using the history manager
     setSearchHistory(getSearchHistory());
@@ -39,6 +48,92 @@ const Profile = () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
+
+  const saveUserData = (updatedData: any) => {
+    try {
+      // Get current user email
+      const currentUser = JSON.parse(localStorage.getItem("fakefinder_user") || "{}");
+      const userEmail = currentUser.email;
+      
+      // Get all users
+      const allUsers = JSON.parse(localStorage.getItem("fakefinder_users") || "[]");
+      const userIndex = allUsers.findIndex((user: any) => user.email === userEmail);
+      
+      if (userIndex !== -1) {
+        // Update user data
+        allUsers[userIndex] = {
+          ...allUsers[userIndex],
+          ...updatedData
+        };
+        
+        // Save updated users data
+        localStorage.setItem("fakefinder_users", JSON.stringify(allUsers));
+        
+        // Update current user data if name changed
+        if (updatedData.name) {
+          currentUser.name = updatedData.name;
+          localStorage.setItem("fakefinder_user", JSON.stringify(currentUser));
+        }
+        
+        // Update local state
+        setUserData({
+          ...userData,
+          ...updatedData
+        });
+        
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error("Error saving user data:", error);
+      return false;
+    }
+  };
+
+  const handleNameSave = () => {
+    if (newName.trim()) {
+      const success = saveUserData({ name: newName.trim() });
+      if (success) {
+        toast({
+          title: "Name updated",
+          description: "Your profile name has been updated."
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Update failed",
+          description: "Failed to update profile name."
+        });
+      }
+    }
+    setIsEditingName(false);
+  };
+  
+  const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const imageUrl = event.target?.result as string;
+        const success = saveUserData({ profileImage: imageUrl });
+        if (success) {
+          setProfileImage(imageUrl);
+          toast({
+            title: "Profile image updated",
+            description: "Your profile image has been updated."
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Update failed",
+            description: "Failed to update profile image."
+          });
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   if (!userData) {
     return (
@@ -86,14 +181,68 @@ const Profile = () => {
         <Card>
           <CardHeader className="pb-4">
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-              <Avatar className="h-24 w-24">
-                <AvatarImage src="" alt={userData.name || ""} />
-                <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
-                  {getInitials(userData.name)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="space-y-2 text-center md:text-left">
-                <CardTitle className="text-2xl">{userData.name || "User"}</CardTitle>
+              <div className="relative">
+                <Avatar className="h-24 w-24 cursor-pointer group relative">
+                  <AvatarImage src={profileImage || ""} alt={userData.name || ""} />
+                  <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
+                    {getInitials(userData.name)}
+                  </AvatarFallback>
+                  <div className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Upload className="h-8 w-8 text-white" />
+                  </div>
+                </Avatar>
+                <Input 
+                  type="file" 
+                  id="profile-image" 
+                  className="hidden" 
+                  accept="image/*"
+                  onChange={handleProfileImageChange}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="absolute bottom-0 right-0 rounded-full h-8 w-8 p-0"
+                  onClick={() => document.getElementById('profile-image')?.click()}
+                >
+                  <Upload className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="space-y-2 text-center md:text-left flex-1">
+                <div className="flex items-center justify-center md:justify-start">
+                  {isEditingName ? (
+                    <div className="flex gap-2 items-center">
+                      <Input 
+                        value={newName} 
+                        onChange={(e) => setNewName(e.target.value)}
+                        className="max-w-[250px]"
+                        autoFocus
+                      />
+                      <Button size="sm" onClick={handleNameSave}>Save</Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => {
+                          setIsEditingName(false);
+                          setNewName(userData.name || "");
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center">
+                      <CardTitle className="text-2xl">{userData.name || "User"}</CardTitle>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="ml-2"
+                        onClick={() => setIsEditingName(true)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
                 <div className="flex flex-col md:flex-row gap-2 md:gap-4 items-center md:items-start text-muted-foreground">
                   <div className="flex items-center">
                     <Mail className="h-4 w-4 mr-2" />

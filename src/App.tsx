@@ -13,7 +13,7 @@ import VideoDetection from "./pages/VideoDetection";
 import TextDetection from "./pages/TextDetection";
 import AudioDetection from "./pages/AudioDetection";
 import Profile from "./pages/Profile";
-import Settings from "./pages/Settings";
+import Settings, { LanguageProvider } from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -56,62 +56,64 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<SignUp />} />
-            
-            {/* Protected routes */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/image-detection" element={
-              <ProtectedRoute>
-                <ImageDetection />
-              </ProtectedRoute>
-            } />
-            <Route path="/video-detection" element={
-              <ProtectedRoute>
-                <VideoDetection />
-              </ProtectedRoute>
-            } />
-            <Route path="/text-detection" element={
-              <ProtectedRoute>
-                <TextDetection />
-              </ProtectedRoute>
-            } />
-            <Route path="/audio-detection" element={
-              <ProtectedRoute>
-                <AudioDetection />
-              </ProtectedRoute>
-            } />
-            <Route path="/profile" element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            } />
-            <Route path="/settings" element={
-              <ProtectedRoute>
-                <Settings />
-              </ProtectedRoute>
-            } />
-            
-            {/* Redirect to login if not authenticated, otherwise to dashboard */}
-            <Route path="/" element={
-              isAuthenticated ? <Navigate to="/dashboard" /> : <Navigate to="/login" />
-            } />
-            
-            {/* Catch-all route */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <LanguageProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<SignUp />} />
+              
+              {/* Protected routes */}
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/image-detection" element={
+                <ProtectedRoute>
+                  <ImageDetection />
+                </ProtectedRoute>
+              } />
+              <Route path="/video-detection" element={
+                <ProtectedRoute>
+                  <VideoDetection />
+                </ProtectedRoute>
+              } />
+              <Route path="/text-detection" element={
+                <ProtectedRoute>
+                  <TextDetection />
+                </ProtectedRoute>
+              } />
+              <Route path="/audio-detection" element={
+                <ProtectedRoute>
+                  <AudioDetection />
+                </ProtectedRoute>
+              } />
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } />
+              <Route path="/settings" element={
+                <ProtectedRoute>
+                  <Settings />
+                </ProtectedRoute>
+              } />
+              
+              {/* Redirect to login if not authenticated, otherwise to dashboard */}
+              <Route path="/" element={
+                isAuthenticated ? <Navigate to="/dashboard" /> : <Navigate to="/login" />
+              } />
+              
+              {/* Catch-all route */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </LanguageProvider>
     </QueryClientProvider>
   );
 };
