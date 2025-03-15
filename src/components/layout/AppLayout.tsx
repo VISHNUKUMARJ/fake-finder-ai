@@ -1,13 +1,14 @@
-
 import { ReactNode, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Shield, Menu, X, LogOut, User, Home, Image, FileVideo, FileAudio, FileText, Settings } from "lucide-react";
+import { Menu, X, LogOut, User, Home, Image, FileVideo, FileAudio, FileText, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { AIAssistant } from "@/components/chat/AIAssistant";
+import { Logo } from "@/components/common/Logo";
 
 type AppLayoutProps = {
   children: ReactNode;
@@ -21,7 +22,6 @@ export const AppLayout = ({ children, title = "Dashboard" }: AppLayoutProps) => 
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    // Check if user is logged in
     const isLoggedIn = localStorage.getItem("fakefinder_isLoggedIn");
     if (isLoggedIn !== "true") {
       navigate("/login");
@@ -50,7 +50,6 @@ export const AppLayout = ({ children, title = "Dashboard" }: AppLayoutProps) => 
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
-      {/* Sidebar for mobile - slide over */}
       {isMobile && (
         <div
           className={cn(
@@ -61,7 +60,6 @@ export const AppLayout = ({ children, title = "Dashboard" }: AppLayoutProps) => 
         />
       )}
       
-      {/* Sidebar */}
       <div
         className={cn(
           "flex flex-col w-64 h-screen bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 z-50",
@@ -70,10 +68,7 @@ export const AppLayout = ({ children, title = "Dashboard" }: AppLayoutProps) => 
         )}
       >
         <div className="flex items-center justify-between p-4">
-          <div className="flex items-center space-x-2">
-            <Shield className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-            <span className="text-lg font-semibold">FakeFinder AI</span>
-          </div>
+          <Logo />
           {isMobile && (
             <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(false)}>
               <X className="h-5 w-5" />
@@ -117,9 +112,7 @@ export const AppLayout = ({ children, title = "Dashboard" }: AppLayoutProps) => 
         </div>
       </div>
       
-      {/* Main content */}
       <div className="flex flex-col flex-1 overflow-hidden">
-        {/* Topbar */}
         <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 h-16 flex items-center px-4 sm:px-6">
           {isMobile && (
             <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(true)} className="mr-4">
@@ -129,11 +122,12 @@ export const AppLayout = ({ children, title = "Dashboard" }: AppLayoutProps) => 
           <h1 className="text-xl font-semibold">{title}</h1>
         </header>
         
-        {/* Page content */}
         <main className="flex-1 overflow-auto p-4 sm:p-6">
           {children}
         </main>
       </div>
+
+      <AIAssistant />
     </div>
   );
 };

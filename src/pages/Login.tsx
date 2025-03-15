@@ -1,123 +1,98 @@
 
-import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { AuthLayout } from "@/components/auth/AuthLayout";
+import { Logo } from "@/components/common/Logo";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  useEffect(() => {
-    // Check if user is already logged in
-    const isLoggedIn = localStorage.getItem("fakefinder_isLoggedIn");
-    if (isLoggedIn === "true") {
-      navigate("/dashboard");
-    }
-  }, [navigate]);
-
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError("");
     
-    // Get registered users from localStorage
-    const registeredUsers = JSON.parse(localStorage.getItem("fakefinder_users") || "[]");
-    
-    // Check if user exists and password matches
-    const user = registeredUsers.find((u: any) => u.email === email);
-    
-    if (!user) {
-      setError("User not found. Please sign up first.");
-      setIsLoading(false);
-      return;
-    }
-    
-    if (user.password !== password) {
-      setError("Invalid password. Please try again.");
-      setIsLoading(false);
-      return;
-    }
-    
-    // Simulate login delay
+    // Simulate login process
     setTimeout(() => {
-      localStorage.setItem("fakefinder_user", JSON.stringify({ email }));
+      // For demo purposes, any login succeeds
       localStorage.setItem("fakefinder_isLoggedIn", "true");
+      localStorage.setItem("fakefinder_user", JSON.stringify({
+        id: "user-123",
+        name: "John Doe",
+        email: email,
+        avatar: null
+      }));
+      
+      toast({
+        title: "Login successful",
+        description: "Welcome back to FakeFinder AI!",
+      });
       
       setIsLoading(false);
-      toast({
-        title: "Welcome back!",
-        description: "You've successfully logged in.",
-      });
       navigate("/dashboard");
-    }, 1000);
+    }, 1500);
   };
 
   return (
-    <AuthLayout>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Login to FakeFinder</CardTitle>
+        <CardHeader className="space-y-1 flex flex-col items-center">
+          <Logo size="lg" className="mb-2" />
+          <CardTitle className="text-2xl text-center">Login</CardTitle>
           <CardDescription className="text-center">
-            Enter your email and password to login to your account
+            Enter your email and password to access your account
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {error && (
-            <div className="p-3 rounded-md bg-red-50 text-red-700 text-sm">
-              {error}
-            </div>
-          )}
-          <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin}>
+          <CardContent className="space-y-4">
             <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="Email"
+                placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full"
               />
             </div>
             <div className="space-y-2">
-              <Input
-                id="password"
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full"
-              />
-              <div className="text-right text-sm">
-                <Link to="/forgot-password" className="text-primary hover:underline">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                <Link to="#" className="text-sm text-blue-500 hover:text-blue-600">
                   Forgot password?
                 </Link>
               </div>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
             </div>
+          </CardContent>
+          <CardFooter className="flex flex-col">
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Logging in..." : "Login"}
             </Button>
-          </form>
-        </CardContent>
-        <CardFooter className="justify-center">
-          <p className="text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <Link to="/signup" className="text-primary hover:underline">
-              Sign up
-            </Link>
-          </p>
-        </CardFooter>
+            <p className="mt-4 text-center text-sm">
+              Don't have an account?{" "}
+              <Link to="/signup" className="text-blue-500 hover:text-blue-600">
+                Sign up
+              </Link>
+            </p>
+          </CardFooter>
+        </form>
       </Card>
-    </AuthLayout>
+    </div>
   );
 };
 
