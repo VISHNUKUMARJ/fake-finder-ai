@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,7 +22,7 @@ const ImageDetection = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [activeMethod, setActiveMethod] = useState("");
-  const [methodResults, setMethodResults] = useState<Record<string, { score: number, complete: boolean }>>({});
+  const [methodResults, setMethodResults] = useState<Record<string, { score: number, complete: boolean, manipulationScore?: number }>>({});
   const [result, setResult] = useState<null | {
     isManipulated: boolean;
     confidenceScore: number;
@@ -99,7 +98,8 @@ const ImageDetection = () => {
     detectionMethods.forEach(method => {
       const methodResult = methodResults[method.name];
       if (methodResult && methodResult.complete) {
-        totalScore += (methodResult.manipulationScore || 50) * method.weight;
+        // Use the manipulationScore property if it exists, or default to 50
+        totalScore += (methodResult.manipulationScore ?? 50) * method.weight;
         totalWeight += method.weight;
       }
     });

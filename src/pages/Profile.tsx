@@ -4,7 +4,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { Mail, Calendar, Search, AlertCircle, ImageIcon, FileVideo, FileAudio, FileText } from "lucide-react";
+import { Mail, Calendar, Search, AlertCircle, ImageIcon, FileVideo, FileAudio, FileText, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { getSearchHistory, SearchHistoryItem } from "@/utils/historyManager";
 
 const Profile = () => {
