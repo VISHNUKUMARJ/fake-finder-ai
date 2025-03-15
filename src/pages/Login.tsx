@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Lock } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -31,64 +32,85 @@ const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Get all users from localStorage
-    const usersString = localStorage.getItem("fakefinder_users");
-    const users = usersString ? JSON.parse(usersString) : [];
-    
-    // Find the user with the provided email
-    const user = users.find((u: any) => u.email === email);
-    
-    setTimeout(() => {
-      if (user && user.password === password) {
-        // Valid credentials - log the user in
-        localStorage.setItem("fakefinder_isLoggedIn", "true");
-        localStorage.setItem("fakefinder_user", JSON.stringify({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          avatar: user.avatar || null
-        }));
-        
-        toast({
-          title: "Login successful",
-          description: `Welcome back, ${user.name}!`,
-        });
-        
-        navigate("/dashboard");
-      } else {
-        // Invalid credentials
-        toast({
-          title: "Login failed",
-          description: "Invalid email or password. Please try again.",
-          variant: "destructive",
-        });
+    try {
+      // Sign in with Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) {
+        throw error;
       }
       
+      // Successful login
+      toast({
+        title: "Login successful",
+        description: "Welcome back!",
+      });
+      
+      // Store session info
+      localStorage.setItem("fakefinder_isLoggedIn", "true");
+      
+      // Store user info
+      if (data.user) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
+          
+        if (profileData) {
+          localStorage.setItem("fakefinder_user", JSON.stringify({
+            id: data.user.id,
+            name: profileData.name,
+            email: data.user.email,
+            avatar: profileData.avatar
+          }));
+        }
+      }
+      
+      navigate("/dashboard");
+    } catch (error: any) {
+      toast({
+        title: "Login failed",
+        description: error.message || "Invalid email or password. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
-  const handleForgotPasswordSubmit = () => {
+  const handleForgotPasswordSubmit = async () => {
     setResetError("");
     
     if (resetStep === 'email') {
-      // Check if email exists
-      const usersString = localStorage.getItem("fakefinder_users");
-      const users = usersString ? JSON.parse(usersString) : [];
-      const userExists = users.some((u: any) => u.email === resetEmail);
-      
-      if (!userExists) {
-        setResetError("No account found with this email address.");
-        return;
+      try {
+        // Send password reset email
+        const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+          redirectTo: `${window.location.origin}/login`
+        });
+        
+        if (error) {
+          throw error;
+        }
+        
+        toast({
+          title: "Password reset email sent",
+          description: "Check your email for a link to reset your password."
+        });
+        
+        // Close the dialog after successful email send
+        setForgotPasswordOpen(false);
+        setResetEmail("");
+      } catch (error: any) {
+        setResetError(error.message || "Failed to send reset email.");
       }
-      
-      // In a real app, we would send an email with a reset link
-      // For this demo, we'll just move to the next step
-      setResetStep('reset');
     } else {
       // Validate passwords match
       if (newPassword !== confirmNewPassword) {
@@ -101,30 +123,31 @@ const Login = () => {
         return;
       }
       
-      // Update the password in localStorage
-      const usersString = localStorage.getItem("fakefinder_users");
-      const users = usersString ? JSON.parse(usersString) : [];
-      const updatedUsers = users.map((user: any) => {
-        if (user.email === resetEmail) {
-          return { ...user, password: newPassword };
+      try {
+        // Update password in Supabase
+        const { error } = await supabase.auth.updateUser({
+          password: newPassword
+        });
+        
+        if (error) {
+          throw error;
         }
-        return user;
-      });
-      
-      localStorage.setItem("fakefinder_users", JSON.stringify(updatedUsers));
-      
-      // Show success toast
-      toast({
-        title: "Password reset successful",
-        description: "Your password has been updated. You can now log in.",
-      });
-      
-      // Close the dialog and reset state
-      setForgotPasswordOpen(false);
-      setResetEmail("");
-      setNewPassword("");
-      setConfirmNewPassword("");
-      setResetStep('email');
+        
+        // Show success toast
+        toast({
+          title: "Password reset successful",
+          description: "Your password has been updated. You can now log in."
+        });
+        
+        // Close the dialog and reset state
+        setForgotPasswordOpen(false);
+        setResetEmail("");
+        setNewPassword("");
+        setConfirmNewPassword("");
+        setResetStep('email');
+      } catch (error: any) {
+        setResetError(error.message || "Failed to update password.");
+      }
     }
   };
 
@@ -136,6 +159,36 @@ const Login = () => {
     setResetStep('email');
     setResetError("");
   };
+
+  // Check if user came from password reset
+  const handleAuthStateChange = async () => {
+    const hash = window.location.hash;
+    
+    if (hash && hash.includes('type=recovery')) {
+      // Extract token from URL hash
+      const params = new URLSearchParams(hash.substring(1));
+      const accessToken = params.get('access_token');
+      
+      if (accessToken) {
+        setForgotPasswordOpen(true);
+        setResetStep('reset');
+        
+        // Set session with the recovery token
+        await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: ''
+        });
+        
+        // Clear the hash
+        window.history.replaceState(null, document.title, window.location.pathname);
+      }
+    }
+  };
+
+  // Listen for auth state changes when component mounts
+  useState(() => {
+    handleAuthStateChange();
+  });
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
@@ -254,7 +307,7 @@ const Login = () => {
               Cancel
             </Button>
             <Button type="button" onClick={handleForgotPasswordSubmit}>
-              {resetStep === 'email' ? 'Continue' : 'Reset Password'}
+              {resetStep === 'email' ? 'Send Reset Link' : 'Reset Password'}
             </Button>
           </DialogFooter>
         </DialogContent>

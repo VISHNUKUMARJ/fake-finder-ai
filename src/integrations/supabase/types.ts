@@ -197,6 +197,63 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          avatar: string | null
+          created_at: string
+          email: string
+          id: string
+          name: string | null
+        }
+        Insert: {
+          avatar?: string | null
+          created_at?: string
+          email: string
+          id: string
+          name?: string | null
+        }
+        Update: {
+          avatar?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string | null
+        }
+        Relationships: []
+      }
+      search_history: {
+        Row: {
+          confidence_score: number
+          date: string
+          filename: string | null
+          id: string
+          result: boolean
+          text_snippet: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          confidence_score: number
+          date?: string
+          filename?: string | null
+          id?: string
+          result: boolean
+          text_snippet?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          confidence_score?: number
+          date?: string
+          filename?: string | null
+          id?: string
+          result?: boolean
+          text_snippet?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       text_features: {
         Row: {
           extracted_at: string | null

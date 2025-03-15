@@ -40,6 +40,7 @@ const ActivityHistory: React.FC<ActivityHistoryProps> = ({ items, onDelete }) =>
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [isClearAllDialogOpen, setIsClearAllDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const handleDeleteItem = (id: string) => {
@@ -47,9 +48,12 @@ const ActivityHistory: React.FC<ActivityHistoryProps> = ({ items, onDelete }) =>
     setIsDeleteDialogOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (itemToDelete) {
-      const success = deleteHistoryItem(itemToDelete);
+      setIsLoading(true);
+      const success = await deleteHistoryItem(itemToDelete);
+      setIsLoading(false);
+      
       if (success) {
         toast({
           title: "Item deleted",
@@ -72,8 +76,11 @@ const ActivityHistory: React.FC<ActivityHistoryProps> = ({ items, onDelete }) =>
     setIsClearAllDialogOpen(true);
   };
 
-  const confirmClearAll = () => {
-    const success = clearAllHistory();
+  const confirmClearAll = async () => {
+    setIsLoading(true);
+    const success = await clearAllHistory();
+    setIsLoading(false);
+    
     if (success) {
       toast({
         title: "History cleared",
@@ -125,6 +132,7 @@ const ActivityHistory: React.FC<ActivityHistoryProps> = ({ items, onDelete }) =>
             size="sm"
             onClick={handleClearAll}
             className="text-destructive hover:text-destructive"
+            disabled={isLoading}
           >
             <Trash2 className="mr-2 h-4 w-4" />
             Clear All
@@ -172,6 +180,7 @@ const ActivityHistory: React.FC<ActivityHistoryProps> = ({ items, onDelete }) =>
                         size="icon"
                         onClick={() => handleDeleteItem(item.id)}
                         aria-label="Delete item"
+                        disabled={isLoading}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -194,8 +203,10 @@ const ActivityHistory: React.FC<ActivityHistoryProps> = ({ items, onDelete }) =>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+            <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} disabled={isLoading}>
+              {isLoading ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -210,8 +221,10 @@ const ActivityHistory: React.FC<ActivityHistoryProps> = ({ items, onDelete }) =>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmClearAll}>Clear All</AlertDialogAction>
+            <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmClearAll} disabled={isLoading}>
+              {isLoading ? "Clearing..." : "Clear All"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

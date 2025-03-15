@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AIAssistant } from "@/components/chat/AIAssistant";
 import { Logo } from "@/components/common/Logo";
+import { supabase } from "@/integrations/supabase/client";
 
 type AppLayoutProps = {
   children: ReactNode;
@@ -22,20 +23,40 @@ export const AppLayout = ({ children, title = "Dashboard" }: AppLayoutProps) => 
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem("fakefinder_isLoggedIn");
-    if (isLoggedIn !== "true") {
-      navigate("/login");
-    }
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        navigate("/login");
+      }
+    };
+    
+    checkAuth();
   }, [navigate]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("fakefinder_isLoggedIn");
-    localStorage.removeItem("fakefinder_user");
-    toast({
-      title: "Logged out",
-      description: "You've been successfully logged out.",
-    });
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        throw error;
+      }
+      
+      localStorage.removeItem("fakefinder_isLoggedIn");
+      localStorage.removeItem("fakefinder_user");
+      
+      toast({
+        title: "Logged out",
+        description: "You've been successfully logged out.",
+      });
+      
+      navigate("/login");
+    } catch (error: any) {
+      toast({
+        title: "Error signing out",
+        description: error.message || "An error occurred while signing out.",
+        variant: "destructive",
+      });
+    }
   };
 
   const navItems = [

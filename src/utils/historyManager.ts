@@ -1,5 +1,6 @@
 
 // History manager for tracking user detection activities
+import { supabase } from "@/integrations/supabase/client";
 
 export type DetectionType = 'image' | 'video' | 'text' | 'audio';
 
@@ -13,37 +14,29 @@ export interface SearchHistoryItem {
   date: string;
 }
 
-export const addToSearchHistory = (item: Omit<SearchHistoryItem, 'id' | 'date'>) => {
+export const addToSearchHistory = async (item: Omit<SearchHistoryItem, 'id' | 'date'>) => {
   try {
-    // Get current user email
-    const currentUser = JSON.parse(localStorage.getItem("fakefinder_user") || "{}");
-    const userEmail = currentUser.email;
+    // Check if user is authenticated
+    const { data: { user } } = await supabase.auth.getUser();
     
-    if (!userEmail) return false;
+    if (!user) return false;
     
-    // Get all users
-    const allUsers = JSON.parse(localStorage.getItem("fakefinder_users") || "[]");
-    const userIndex = allUsers.findIndex((user: any) => user.email === userEmail);
+    // Insert history item into Supabase
+    const { error } = await supabase
+      .from('search_history')
+      .insert({
+        user_id: user.id,
+        type: item.type,
+        filename: item.filename,
+        text_snippet: item.textSnippet,
+        result: item.result,
+        confidence_score: item.confidenceScore
+      });
     
-    if (userIndex === -1) return false;
-    
-    // Create new history item
-    const newItem: SearchHistoryItem = {
-      ...item,
-      id: crypto.randomUUID(),
-      date: new Date().toISOString()
-    };
-    
-    // Update user's search history
-    if (!allUsers[userIndex].searchHistory) {
-      allUsers[userIndex].searchHistory = [];
+    if (error) {
+      console.error("Error adding to search history:", error);
+      return false;
     }
-    
-    // Add new item at the beginning of the array (most recent first)
-    allUsers[userIndex].searchHistory.unshift(newItem);
-    
-    // Save updated users data
-    localStorage.setItem("fakefinder_users", JSON.stringify(allUsers));
     
     return true;
   } catch (error) {
@@ -52,51 +45,59 @@ export const addToSearchHistory = (item: Omit<SearchHistoryItem, 'id' | 'date'>)
   }
 };
 
-export const getSearchHistory = (): SearchHistoryItem[] => {
+export const getSearchHistory = async (): Promise<SearchHistoryItem[]> => {
   try {
-    // Get current user
-    const currentUser = JSON.parse(localStorage.getItem("fakefinder_user") || "{}");
-    const userEmail = currentUser.email;
-    
-    if (!userEmail) return [];
-    
-    // Get all users
-    const allUsers = JSON.parse(localStorage.getItem("fakefinder_users") || "[]");
-    const user = allUsers.find((user: any) => user.email === userEmail);
+    // Check if user is authenticated
+    const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) return [];
     
-    return user.searchHistory || [];
+    // Get history items from Supabase
+    const { data, error } = await supabase
+      .from('search_history')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('date', { ascending: false });
+    
+    if (error) {
+      console.error("Error getting search history:", error);
+      return [];
+    }
+    
+    // Transform to match the SearchHistoryItem interface
+    return data.map(item => ({
+      id: item.id,
+      type: item.type,
+      filename: item.filename,
+      textSnippet: item.text_snippet,
+      result: item.result,
+      confidenceScore: item.confidence_score,
+      date: item.date
+    }));
   } catch (error) {
     console.error("Error getting search history:", error);
     return [];
   }
 };
 
-export const deleteHistoryItem = (itemId: string): boolean => {
+export const deleteHistoryItem = async (itemId: string): Promise<boolean> => {
   try {
-    // Get current user
-    const currentUser = JSON.parse(localStorage.getItem("fakefinder_user") || "{}");
-    const userEmail = currentUser.email;
+    // Check if user is authenticated
+    const { data: { user } } = await supabase.auth.getUser();
     
-    if (!userEmail) return false;
+    if (!user) return false;
     
-    // Get all users
-    const allUsers = JSON.parse(localStorage.getItem("fakefinder_users") || "[]");
-    const userIndex = allUsers.findIndex((user: any) => user.email === userEmail);
+    // Delete history item from Supabase
+    const { error } = await supabase
+      .from('search_history')
+      .delete()
+      .eq('id', itemId)
+      .eq('user_id', user.id);
     
-    if (userIndex === -1) return false;
-    
-    // Check if user has search history
-    if (!allUsers[userIndex].searchHistory) return false;
-    
-    // Filter out the item to delete
-    allUsers[userIndex].searchHistory = allUsers[userIndex].searchHistory.filter(
-      (item: SearchHistoryItem) => item.id !== itemId
-    );
-    
-    // Save updated users data
-    localStorage.setItem("fakefinder_users", JSON.stringify(allUsers));
+    if (error) {
+      console.error("Error deleting history item:", error);
+      return false;
+    }
     
     return true;
   } catch (error) {
@@ -105,25 +106,23 @@ export const deleteHistoryItem = (itemId: string): boolean => {
   }
 };
 
-export const clearAllHistory = (): boolean => {
+export const clearAllHistory = async (): Promise<boolean> => {
   try {
-    // Get current user
-    const currentUser = JSON.parse(localStorage.getItem("fakefinder_user") || "{}");
-    const userEmail = currentUser.email;
+    // Check if user is authenticated
+    const { data: { user } } = await supabase.auth.getUser();
     
-    if (!userEmail) return false;
+    if (!user) return false;
     
-    // Get all users
-    const allUsers = JSON.parse(localStorage.getItem("fakefinder_users") || "[]");
-    const userIndex = allUsers.findIndex((user: any) => user.email === userEmail);
+    // Delete all history items for the current user from Supabase
+    const { error } = await supabase
+      .from('search_history')
+      .delete()
+      .eq('user_id', user.id);
     
-    if (userIndex === -1) return false;
-    
-    // Clear user's search history
-    allUsers[userIndex].searchHistory = [];
-    
-    // Save updated users data
-    localStorage.setItem("fakefinder_users", JSON.stringify(allUsers));
+    if (error) {
+      console.error("Error clearing history:", error);
+      return false;
+    }
     
     return true;
   } catch (error) {

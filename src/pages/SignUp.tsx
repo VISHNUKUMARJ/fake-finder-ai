@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { Logo } from "@/components/common/Logo";
+import { supabase } from "@/integrations/supabase/client";
 
 const SignUp = () => {
   const [name, setName] = useState("");
@@ -17,7 +18,7 @@ const SignUp = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleSignUp = (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (password !== confirmPassword) {
@@ -31,56 +32,51 @@ const SignUp = () => {
     
     setIsLoading(true);
     
-    // Simulate registration process
-    setTimeout(() => {
-      // Generate a new user object
-      const newUser = {
-        id: "user-" + Date.now(),
-        name: name,
-        email: email,
-        password: password, // In a real app, this should be hashed
-        avatar: null,
-        createdAt: new Date().toISOString()
-      };
+    try {
+      // Sign up with Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: name
+          }
+        }
+      });
       
-      // Get existing users from localStorage
-      const usersString = localStorage.getItem("fakefinder_users");
-      const existingUsers = usersString ? JSON.parse(usersString) : [];
-      
-      // Check if email already exists
-      const emailExists = existingUsers.some((user: any) => user.email === email);
-      
-      if (emailExists) {
-        toast({
-          title: "Email already in use",
-          description: "Please use a different email address or log in.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
+      if (error) {
+        throw error;
       }
       
-      // Add new user to the array and save back to localStorage
-      const updatedUsers = [...existingUsers, newUser];
-      localStorage.setItem("fakefinder_users", JSON.stringify(updatedUsers));
-      
-      // Also log the user in
-      localStorage.setItem("fakefinder_isLoggedIn", "true");
-      localStorage.setItem("fakefinder_user", JSON.stringify({
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
-        avatar: newUser.avatar
-      }));
-      
+      // Successful signup
       toast({
         title: "Account created",
         description: "Welcome to FakeFinder AI!",
       });
       
-      setIsLoading(false);
+      // Store session info
+      localStorage.setItem("fakefinder_isLoggedIn", "true");
+      
+      // Store user info
+      if (data.user) {
+        localStorage.setItem("fakefinder_user", JSON.stringify({
+          id: data.user.id,
+          name: name,
+          email: data.user.email,
+          avatar: null
+        }));
+      }
+      
       navigate("/dashboard");
-    }, 1500);
+    } catch (error: any) {
+      toast({
+        title: "Sign up failed",
+        description: error.message || "An error occurred during sign up.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

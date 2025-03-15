@@ -4,7 +4,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
@@ -37,7 +38,32 @@ const initializeTheme = () => {
 
 // Protected route wrapper component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const isAuthenticated = localStorage.getItem("fakefinder_isLoggedIn") === "true";
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      setIsAuthenticated(!!data.session);
+    };
+    
+    checkAuth();
+    
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setIsAuthenticated(!!session);
+      }
+    );
+    
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+  
+  // Show loading while checking auth
+  if (isAuthenticated === null) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  }
   
   if (!isAuthenticated) {
     return <Navigate to="/login" />;
@@ -47,12 +73,39 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App = () => {
-  // Check if user is authenticated
-  const isAuthenticated = localStorage.getItem("fakefinder_isLoggedIn") === "true";
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   
   useEffect(() => {
     initializeTheme();
+    
+    // Check if the user is authenticated
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      setIsAuthenticated(!!data.session);
+      
+      // Set localStorage flag for backward compatibility
+      localStorage.setItem("fakefinder_isLoggedIn", data.session ? "true" : "false");
+    };
+    
+    checkAuth();
+    
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setIsAuthenticated(!!session);
+        localStorage.setItem("fakefinder_isLoggedIn", session ? "true" : "false");
+      }
+    );
+    
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
+
+  // Show loading while checking auth
+  if (isAuthenticated === null) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -63,8 +116,12 @@ const App = () => {
           <BrowserRouter>
             <Routes>
               {/* Public routes */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<SignUp />} />
+              <Route path="/login" element={
+                isAuthenticated ? <Navigate to="/dashboard" /> : <Login />
+              } />
+              <Route path="/signup" element={
+                isAuthenticated ? <Navigate to="/dashboard" /> : <SignUp />
+              } />
               
               {/* Protected routes */}
               <Route path="/dashboard" element={
