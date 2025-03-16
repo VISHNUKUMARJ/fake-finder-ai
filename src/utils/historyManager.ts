@@ -3,6 +3,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import { DetectionType, SearchHistoryItem } from "@/types/detection";
 
+// Re-export the SearchHistoryItem type so components can import it from this file
+export { SearchHistoryItem };
+
 export const addToSearchHistory = async (item: Omit<SearchHistoryItem, 'id' | 'date'>) => {
   try {
     // Check if user is authenticated
