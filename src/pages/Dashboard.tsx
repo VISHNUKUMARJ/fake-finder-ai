@@ -27,29 +27,33 @@ const Dashboard = () => {
   
   useEffect(() => {
     // Load search history
-    const history = getSearchHistory();
-    setSearchHistory(history);
-    
-    // Calculate stats
-    const calcStats = {
-      totalDetections: history.length,
-      manipulatedDetections: history.filter(item => item.result).length,
-      authenticDetections: history.filter(item => !item.result).length,
-      byType: {} as Record<string, { total: number; manipulated: number }>
+    const loadHistory = async () => {
+      const history = await getSearchHistory();
+      setSearchHistory(history);
+      
+      // Calculate stats
+      const calcStats = {
+        totalDetections: history.length,
+        manipulatedDetections: history.filter(item => item.result).length,
+        authenticDetections: history.filter(item => !item.result).length,
+        byType: {} as Record<string, { total: number; manipulated: number }>
+      };
+      
+      // Group by type
+      history.forEach(item => {
+        if (!calcStats.byType[item.type]) {
+          calcStats.byType[item.type] = { total: 0, manipulated: 0 };
+        }
+        calcStats.byType[item.type].total += 1;
+        if (item.result) {
+          calcStats.byType[item.type].manipulated += 1;
+        }
+      });
+      
+      setStats(calcStats);
     };
     
-    // Group by type
-    history.forEach(item => {
-      if (!calcStats.byType[item.type]) {
-        calcStats.byType[item.type] = { total: 0, manipulated: 0 };
-      }
-      calcStats.byType[item.type].total += 1;
-      if (item.result) {
-        calcStats.byType[item.type].manipulated += 1;
-      }
-    });
-    
-    setStats(calcStats);
+    loadHistory();
   }, []);
   
   const detectionCards = [

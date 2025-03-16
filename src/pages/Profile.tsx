@@ -31,14 +31,23 @@ const Profile = () => {
     setProfileImage(userWithHistory.profileImage || null);
     
     // Load search history using the history manager
-    setSearchHistory(getSearchHistory());
+    const loadHistory = async () => {
+      const history = await getSearchHistory();
+      setSearchHistory(history);
+    };
+    
+    loadHistory();
   }, []);
 
   // Refresh search history when component is focused
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        setSearchHistory(getSearchHistory());
+        const refreshHistory = async () => {
+          const history = await getSearchHistory();
+          setSearchHistory(history);
+        };
+        refreshHistory();
       }
     };
 

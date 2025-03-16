@@ -64,10 +64,10 @@ export const getSearchHistory = async (): Promise<SearchHistoryItem[]> => {
       return [];
     }
     
-    // Transform to match the SearchHistoryItem interface
+    // Transform to match the SearchHistoryItem interface with proper type casting
     return data.map(item => ({
       id: item.id,
-      type: item.type,
+      type: item.type as DetectionType, // Cast the string type to DetectionType
       filename: item.filename,
       textSnippet: item.text_snippet,
       result: item.result,
