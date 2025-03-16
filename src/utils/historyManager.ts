@@ -1,18 +1,7 @@
 
 // History manager for tracking user detection activities
 import { supabase } from "@/integrations/supabase/client";
-
-export type DetectionType = 'image' | 'video' | 'text' | 'audio';
-
-export interface SearchHistoryItem {
-  id: string;
-  type: DetectionType;
-  filename?: string;
-  textSnippet?: string;
-  result: boolean;  // true means manipulated/AI-generated, false means authentic
-  confidenceScore: number;
-  date: string;
-}
+import { DetectionType, SearchHistoryItem } from "@/types/detection";
 
 export const addToSearchHistory = async (item: Omit<SearchHistoryItem, 'id' | 'date'>) => {
   try {
