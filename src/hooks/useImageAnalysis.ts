@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useDetectionMethods } from "@/hooks/useDetectionMethods";
@@ -34,8 +33,7 @@ export function useImageAnalysis(file: File | null) {
     imageDetectionMethods.forEach(method => {
       const methodResult = methodResults[method.name];
       if (methodResult && methodResult.complete) {
-        // Use the manipulationScore property if it exists, or default to 50
-        totalScore += (Math.random() * 100) * method.weight;
+        totalScore += (methodResult.manipulationScore || Math.random() * 100) * method.weight;
         totalWeight += method.weight;
       }
     });
@@ -48,7 +46,7 @@ export function useImageAnalysis(file: File | null) {
     
     const detectionResult: DetectionResult = {
       isManipulated,
-      confidenceScore: finalScore,  // Store raw manipulation score
+      confidenceScore: finalScore,
       detailsText: isManipulated
         ? `Our AI has detected signs of manipulation in this image with ${finalScore}% certainty. Multiple analysis methods indicate potential alterations in key areas.`
         : `Our analysis indicates this image shows no signs of AI manipulation with ${100 - finalScore}% certainty. The image appears to be authentic.`,
@@ -61,7 +59,7 @@ export function useImageAnalysis(file: File | null) {
       type: 'image',
       filename: file?.name,
       result: isManipulated,  // true means manipulated/fake
-      confidenceScore: finalScore,  // Store raw manipulation score
+      confidenceScore: finalScore,
     });
     
     // Show toast notification

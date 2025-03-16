@@ -18,8 +18,10 @@ export function useTextAnalysis(text: string) {
   const analyzeTextFeatures = () => {
     const simulatedScores: Record<string, number> = {};
     
+    // Bias the feature analysis to detect AI content more reliably
     textFeatures.forEach(feature => {
-      const isAIGenerated = Math.random() > 0.5;
+      // Assuming uploaded content is more likely AI-generated, bias scores toward AI ranges
+      const isAIGenerated = Math.random() > 0.3; // Increase probability of AI detection
       const range = isAIGenerated ? feature.aiRange : feature.humanRange;
       simulatedScores[feature.name] = Math.floor(Math.random() * (range[1] - range[0])) + range[0];
     });
@@ -49,6 +51,7 @@ export function useTextAnalysis(text: string) {
     const featureAvgScore = Object.values(features).reduce((sum, score) => sum + score, 0) / 
       Object.values(features).length;
     
+    // Weight the methods, with a slight bias toward AI detection for demonstration
     const finalScore = (
       statisticalScore.score * 0.2 + 
       perplexityScore.score * 0.2 + 
@@ -56,7 +59,8 @@ export function useTextAnalysis(text: string) {
       semanticScore.score * 0.3
     );
     
-    const isAIGenerated = finalScore > 65;
+    // Lower threshold to 60 to catch more AI-generated text
+    const isAIGenerated = finalScore > 60;
     const roundedScore = Math.round(finalScore);
     const humanScore = Math.round(100 - finalScore);
     

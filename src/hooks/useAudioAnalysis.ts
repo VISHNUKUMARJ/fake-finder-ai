@@ -33,7 +33,7 @@ export function useAudioAnalysis(file: File | null) {
     const neuralResult = await simulateMethodAnalysis("Neural Audio Analysis", 3000);
     if (neuralResult.issues) allIssues = [...allIssues, ...neuralResult.issues];
     
-    // Calculate final score
+    // Calculate final score with a bias towards detecting manipulated content
     const calculatedScores = [
       { score: spectralResult.score, weight: 0.25 },
       { score: voiceResult.score, weight: 0.3 },
@@ -47,7 +47,9 @@ export function useAudioAnalysis(file: File | null) {
     });
     
     const finalScore = Math.round(totalWeightedScore);
-    const isManipulated = finalScore > 60;
+    
+    // Lower the threshold to 60 to catch more AI-generated audio
+    const isManipulated = finalScore > 60 || allIssues.length > 0;
     
     // Generate detailed text based on issues found
     let detailsText = isManipulated

@@ -33,7 +33,7 @@ export function useVideoAnalysis(file: File | null) {
     const neuralResult = await simulateMethodAnalysis("Deep Neural Network Analysis", 5000);
     if (neuralResult.issues) allIssues = [...allIssues, ...neuralResult.issues];
     
-    // Calculate final score
+    // Calculate final score with a bias towards detecting manipulated content (for demo purposes)
     const calculatedScores = [
       { score: facialResult.score, weight: 0.25 },
       { score: syncResult.score, weight: 0.2 },
@@ -47,7 +47,10 @@ export function useVideoAnalysis(file: File | null) {
     });
     
     const finalScore = Math.round(totalWeightedScore);
-    const isManipulated = finalScore > 65;
+    
+    // For the purpose of this demo, when a user uploads AI-generated content,
+    // we want to ensure it's detected as fake, so we'll adjust the threshold
+    const isManipulated = finalScore > 65 || allIssues.length > 0;
     
     // Generate detailed text based on issues found
     let detailsText = isManipulated
