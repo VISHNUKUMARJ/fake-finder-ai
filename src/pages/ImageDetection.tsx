@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -112,18 +113,18 @@ const ImageDetection = () => {
     
     setResult({
       isManipulated,
-      confidenceScore: isManipulated ? finalScore : 100 - finalScore,
+      confidenceScore: finalScore,  // Store raw manipulation score
       detailsText: isManipulated
         ? `Our AI has detected signs of manipulation in this image with ${finalScore}% certainty. Multiple analysis methods indicate potential alterations in key areas.`
         : `Our analysis indicates this image shows no signs of AI manipulation with ${100 - finalScore}% certainty. The image appears to be authentic.`,
     });
     
     // Add to search history
-    addToSearchHistory({
+    await addToSearchHistory({
       type: 'image',
       filename: file?.name,
-      result: isManipulated,
-      confidenceScore: isManipulated ? finalScore : 100 - finalScore,
+      result: isManipulated,  // true means manipulated/fake
+      confidenceScore: finalScore,  // Store raw manipulation score
     });
     
     // Show toast notification
@@ -206,7 +207,7 @@ const ImageDetection = () => {
         <AlertDescription className="mt-2">
           <p>{detailsText}</p>
           <p className="mt-2">
-            <strong>Confidence score: {confidenceScore}%</strong>
+            <strong>Confidence score: {100 - confidenceScore}%</strong>
           </p>
         </AlertDescription>
       </Alert>

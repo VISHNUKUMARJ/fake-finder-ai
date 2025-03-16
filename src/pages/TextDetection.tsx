@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,7 +9,6 @@ import { CheckCircle2, XCircle, AlertTriangle, Info } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { addToSearchHistory } from "@/utils/historyManager";
 
-// Text detection methods
 const detectionMethods = [
   { name: "Statistical Pattern Analysis", weight: 0.2 },
   { name: "Perplexity Measurement", weight: 0.2 },
@@ -18,7 +16,6 @@ const detectionMethods = [
   { name: "Semantic Consistency Check", weight: 0.3 }
 ];
 
-// Simulated text features to analyze
 const textFeatures = [
   { name: "Repeated Phrases", humanRange: [0, 30], aiRange: [20, 75] },
   { name: "Sentence Complexity", humanRange: [40, 90], aiRange: [60, 95] },
@@ -46,7 +43,6 @@ const TextDetection = () => {
     return new Promise<number>((resolve) => {
       setActiveMethod(methodName);
       
-      // Simulate method-specific analysis
       const interval = setInterval(() => {
         setMethodResults(prev => {
           const methodProgress = prev[methodName]?.score + (100 / (duration / 100)) || 0;
@@ -64,7 +60,6 @@ const TextDetection = () => {
         });
       }, 100);
       
-      // Resolve after the duration with an AI probability score
       setTimeout(() => {
         const aiProbabilityScore = Math.random() * 100;
         resolve(aiProbabilityScore);
@@ -72,13 +67,10 @@ const TextDetection = () => {
     });
   };
 
-  // Analyze specific text features and generate scores
   const analyzeTextFeatures = () => {
     const simulatedScores: Record<string, number> = {};
     
     textFeatures.forEach(feature => {
-      // Generate a score that's more likely to be in the AI range (for simulation)
-      // This would be replaced with actual NLP analysis in a real implementation
       const isAIGenerated = Math.random() > 0.5;
       const range = isAIGenerated ? feature.aiRange : feature.humanRange;
       simulatedScores[feature.name] = Math.floor(Math.random() * (range[1] - range[0])) + range[0];
@@ -89,7 +81,6 @@ const TextDetection = () => {
   };
 
   const runAllMethods = async () => {
-    // Initialize method results
     detectionMethods.forEach(method => {
       setMethodResults(prev => ({
         ...prev,
@@ -97,26 +88,19 @@ const TextDetection = () => {
       }));
     });
     
-    // Analyze text features first
     const features = analyzeTextFeatures();
     
-    // Run statistical analysis
     const statisticalScore = await simulateMethodAnalysis("Statistical Pattern Analysis", 1200);
     
-    // Run perplexity measurement
     const perplexityScore = await simulateMethodAnalysis("Perplexity Measurement", 1000);
     
-    // Run stylometric analysis
     const stylometricScore = await simulateMethodAnalysis("Stylometric Analysis", 1500);
     
-    // Run semantic consistency check
     const semanticScore = await simulateMethodAnalysis("Semantic Consistency Check", 1300);
     
-    // Calculate average of feature scores for AI indicators
     const featureAvgScore = Object.values(features).reduce((sum, score) => sum + score, 0) / 
       Object.values(features).length;
     
-    // Weight and combine all scores
     const finalScore = (
       statisticalScore * 0.2 + 
       perplexityScore * 0.2 + 
@@ -124,10 +108,8 @@ const TextDetection = () => {
       semanticScore * 0.3
     );
     
-    // Determine if AI generated (score above 65 indicates AI generation)
     const isAIGenerated = finalScore > 65;
     
-    // Create result
     setResult({
       isAIGenerated,
       confidenceScore: Math.round(finalScore),
@@ -137,15 +119,13 @@ const TextDetection = () => {
         : `This text appears to be human-written based on our analysis. The content shows natural language patterns consistent with human writing with ${Math.round(100 - finalScore)}% confidence.`,
     });
     
-    // Add to search history
-    addToSearchHistory({
+    await addToSearchHistory({
       type: 'text',
       textSnippet: text.length > 50 ? text.substring(0, 50) + '...' : text,
       result: isAIGenerated,
       confidenceScore: Math.round(finalScore),
     });
     
-    // Show toast notification
     toast({
       title: "Analysis Complete",
       description: `Text analysis complete with ${Math.round(finalScore)}% AI probability.`,
@@ -159,14 +139,13 @@ const TextDetection = () => {
     setProgress(0);
     setFeatureScores({});
     
-    // Track overall progress
     const progressInterval = setInterval(() => {
       setProgress(prev => {
         const newProgress = Object.values(methodResults).reduce(
           (sum, method) => sum + (method.score / detectionMethods.length),
           0
         );
-        return Math.min(Math.round(newProgress), 99); // Cap at 99% until complete
+        return Math.min(Math.round(newProgress), 99);
       });
     }, 100);
     
@@ -224,7 +203,6 @@ const TextDetection = () => {
               </div>
             </div>
             
-            {/* Feature analysis chart */}
             {Object.keys(featureScores).length > 0 && (
               <div className="mt-5">
                 <p className="text-sm font-medium mb-2">Text Feature Analysis</p>
@@ -284,7 +262,6 @@ const TextDetection = () => {
             </div>
           </div>
           
-          {/* Feature analysis chart */}
           {Object.keys(featureScores).length > 0 && (
             <div className="mt-5">
               <p className="text-sm font-medium mb-2">Text Feature Analysis</p>
@@ -355,7 +332,6 @@ const TextDetection = () => {
                   Analyzing text... {progress}%
                 </p>
                 
-                {/* Analysis methods progress */}
                 <div className="space-y-2 mt-4">
                   {detectionMethods.map((method) => (
                     <div key={method.name} className="space-y-1">

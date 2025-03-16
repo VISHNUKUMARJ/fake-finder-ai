@@ -9,7 +9,7 @@ export interface SearchHistoryItem {
   type: DetectionType;
   filename?: string;
   textSnippet?: string;
-  result: boolean;
+  result: boolean;  // true means manipulated/AI-generated, false means authentic
   confidenceScore: number;
   date: string;
 }

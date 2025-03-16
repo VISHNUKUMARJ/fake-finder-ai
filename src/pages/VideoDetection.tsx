@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -139,17 +138,17 @@ const VideoDetection = () => {
     
     setResult({
       isManipulated,
-      confidenceScore: isManipulated ? finalScore : 100 - finalScore,
+      confidenceScore: finalScore,
       detailsText,
       issues: allIssues.length > 0 ? allIssues : undefined
     });
     
     // Add to search history
-    addToSearchHistory({
+    await addToSearchHistory({
       type: 'video',
       filename: file?.name,
       result: isManipulated,
-      confidenceScore: isManipulated ? finalScore : 100 - finalScore,
+      confidenceScore: finalScore,
     });
     
     // Show toast notification
