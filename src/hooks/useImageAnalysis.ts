@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useDetectionMethods } from "@/hooks/useDetectionMethods";
@@ -15,26 +16,37 @@ export function useImageAnalysis(file: File | null) {
 
   const runAllMethods = async () => {
     // Run metadata analysis (quickest)
-    await simulateMethodAnalysis("Metadata Analysis", 1500);
+    setActiveMethod("Metadata Analysis");
+    await simulateMethodAnalysis("Metadata Analysis", 1500, file);
     
     // Run error level analysis
-    await simulateMethodAnalysis("Error Level Analysis", 2500);
+    setActiveMethod("Error Level Analysis");
+    await simulateMethodAnalysis("Error Level Analysis", 2500, file);
     
     // Run face detection
-    await simulateMethodAnalysis("Face Detection & Analysis", 3000);
+    setActiveMethod("Face Detection & Analysis");
+    await simulateMethodAnalysis("Face Detection & Analysis", 3000, file);
     
     // Run neural network analysis (most complex)
-    await simulateMethodAnalysis("Neural Network Pattern Recognition", 3500);
+    setActiveMethod("Neural Network Pattern Recognition");
+    await simulateMethodAnalysis("Neural Network Pattern Recognition", 3500, file);
     
     // Calculate final score and determine result
     let totalScore = 0;
     let totalWeight = 0;
+    let allIssues: string[] = [];
     
     imageDetectionMethods.forEach(method => {
       const methodResult = methodResults[method.name];
       if (methodResult && methodResult.complete) {
-        totalScore += (methodResult.manipulationScore || Math.random() * 100) * method.weight;
+        const manipulationScore = methodResult.manipulationScore || Math.random() * 100;
+        totalScore += manipulationScore * method.weight;
         totalWeight += method.weight;
+        
+        // Collect issues for the final result
+        if (methodResult.issues && methodResult.issues.length > 0) {
+          allIssues = [...allIssues, ...methodResult.issues];
+        }
       }
     });
     
@@ -50,6 +62,7 @@ export function useImageAnalysis(file: File | null) {
       detailsText: isManipulated
         ? `Our AI has detected signs of manipulation in this image with ${finalScore}% certainty. Multiple analysis methods indicate potential alterations in key areas.`
         : `Our analysis indicates this image shows no signs of AI manipulation with ${100 - finalScore}% certainty. The image appears to be authentic.`,
+      issues: allIssues.length > 0 ? allIssues : undefined
     };
     
     setResult(detectionResult);
@@ -64,7 +77,7 @@ export function useImageAnalysis(file: File | null) {
     
     // Show toast notification
     toast({
-      title: "Analysis Complete",
+      title: isManipulated ? "AI-Generated Image Detected" : "Analysis Complete",
       description: `Image analysis complete with ${isManipulated ? finalScore : 100 - finalScore}% confidence.`,
     });
   };
@@ -74,6 +87,7 @@ export function useImageAnalysis(file: File | null) {
     
     setIsAnalyzing(true);
     setProgress(0);
+    setResult(null);
     
     // Reset results
     imageDetectionMethods.forEach(method => {

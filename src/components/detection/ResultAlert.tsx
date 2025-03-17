@@ -1,6 +1,6 @@
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import { CheckCircle2, XCircle, AlertTriangle, Sparkles } from "lucide-react";
 
 interface ResultAlertProps {
   result: {
@@ -26,18 +26,18 @@ export const ResultAlert = ({ result, color = "red" }: ResultAlertProps) => {
     return (
       <Alert className={`mt-6 ${borderColor} ${bgColor}`}>
         {color === "red" ? (
-          <XCircle className={`h-5 w-5 ${iconColor}`} />
+          <Sparkles className={`h-5 w-5 ${iconColor}`} />
         ) : (
           <AlertTriangle className={`h-5 w-5 ${iconColor}`} />
         )}
         <AlertTitle className={`${textColor} text-lg font-semibold`}>
-          Potentially Manipulated Content
+          AI-Generated or Manipulated Content Detected
         </AlertTitle>
         <AlertDescription className="mt-2">
           <p>{detailsText}</p>
           {issues && issues.length > 0 && (
             <div className="mt-3">
-              <p className="font-medium">Issues detected:</p>
+              <p className="font-medium">AI detection signals:</p>
               <ul className="list-disc pl-5 mt-1">
                 {issues.map((issue, index) => (
                   <li key={index} className={textColor}>{issue}</li>
@@ -46,7 +46,7 @@ export const ResultAlert = ({ result, color = "red" }: ResultAlertProps) => {
             </div>
           )}
           <p className="mt-3">
-            <strong>Confidence score: {confidenceScore}%</strong>
+            <strong>AI confidence score: {confidenceScore}%</strong>
           </p>
         </AlertDescription>
       </Alert>
