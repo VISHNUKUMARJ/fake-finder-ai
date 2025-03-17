@@ -3,7 +3,12 @@ import { useState, useEffect } from "react";
 import { DetectionMethod } from "@/types/detection";
 
 export function useDetectionMethods(methods: DetectionMethod[]) {
-  const [methodResults, setMethodResults] = useState<Record<string, { score: number, complete: boolean, manipulationScore?: number }>>({});
+  const [methodResults, setMethodResults] = useState<Record<string, { 
+    score: number, 
+    complete: boolean, 
+    manipulationScore?: number,
+    issues?: string[]
+  }>>({});
   
   // Reset method results when dependencies change
   useEffect(() => {
@@ -71,10 +76,21 @@ export function useDetectionMethods(methods: DetectionMethod[]) {
           }
         }
         
+        // Update the methodResults with the final data including issues
+        setMethodResults(prev => ({
+          ...prev,
+          [methodName]: { 
+            ...prev[methodName], 
+            complete: true,
+            manipulationScore: adjustedScore,
+            issues: issues.length > 0 ? issues : undefined
+          }
+        }));
+        
         resolve({ 
           score: 100, // Progress score is 100%
           manipulationScore: adjustedScore, // Actual manipulation detection score
-          issues 
+          issues: issues.length > 0 ? issues : undefined
         });
       }, duration);
     });
