@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -160,12 +159,10 @@ const Login = () => {
     setResetError("");
   };
 
-  // Check if user came from password reset
   const handleAuthStateChange = async () => {
     const hash = window.location.hash;
     
     if (hash && hash.includes('type=recovery')) {
-      // Extract token from URL hash
       const params = new URLSearchParams(hash.substring(1));
       const accessToken = params.get('access_token');
       
@@ -173,19 +170,16 @@ const Login = () => {
         setForgotPasswordOpen(true);
         setResetStep('reset');
         
-        // Set session with the recovery token
         await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: ''
         });
         
-        // Clear the hash
         window.history.replaceState(null, document.title, window.location.pathname);
       }
     }
   };
 
-  // Listen for auth state changes when component mounts
   useState(() => {
     handleAuthStateChange();
   });
@@ -248,7 +242,6 @@ const Login = () => {
         </form>
       </Card>
 
-      {/* Forgot Password Dialog */}
       <Dialog open={forgotPasswordOpen} onOpenChange={handleCloseReset}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
