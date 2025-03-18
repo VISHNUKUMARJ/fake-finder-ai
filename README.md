@@ -1,4 +1,3 @@
-
 # FakeFinder AI
 
 A web application that helps detect fake images, videos, texts, and audios using AI technology.
@@ -26,3 +25,4 @@ A web application that helps detect fake images, videos, texts, and audios using
 - Tailwind CSS
 - React Router for navigation
 - Local storage for user management
+
