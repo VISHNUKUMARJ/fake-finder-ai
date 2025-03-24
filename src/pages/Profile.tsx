@@ -5,7 +5,7 @@ import { SearchHistoryList } from "@/components/profile/SearchHistoryList";
 import { useUserProfile } from "@/hooks/useUserProfile";
 
 const Profile = () => {
-  const { userData, searchHistory, isLoading, saveUserData } = useUserProfile();
+  const { userData, searchHistory, isLoading, saveUserData, refreshHistory } = useUserProfile();
 
   if (isLoading) {
     return (
@@ -31,7 +31,7 @@ const Profile = () => {
     <AppLayout title="Profile">
       <div className="space-y-6 max-w-4xl mx-auto">
         <ProfileCard userData={userData} saveUserData={saveUserData} />
-        <SearchHistoryList searchHistory={searchHistory} />
+        <SearchHistoryList searchHistory={searchHistory} onDelete={refreshHistory} />
       </div>
     </AppLayout>
   );

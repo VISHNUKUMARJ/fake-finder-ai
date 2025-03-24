@@ -1,13 +1,32 @@
 
+import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Search, AlertCircle, ImageIcon, FileVideo, FileAudio, FileText, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { SearchHistoryItem } from "@/utils/historyManager";
+import { Search, AlertCircle, ImageIcon, FileVideo, FileAudio, FileText, AlertTriangle, CheckCircle2, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { SearchHistoryItem, deleteHistoryItem } from "@/utils/historyManager";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface SearchHistoryListProps {
   searchHistory: SearchHistoryItem[];
+  onDelete?: () => void;
 }
 
-export const SearchHistoryList = ({ searchHistory }: SearchHistoryListProps) => {
+export const SearchHistoryList = ({ searchHistory, onDelete }: SearchHistoryListProps) => {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'image':
@@ -32,6 +51,35 @@ export const SearchHistoryList = ({ searchHistory }: SearchHistoryListProps) => 
     }
   };
 
+  const handleDeleteItem = (id: string) => {
+    setItemToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (itemToDelete) {
+      setIsLoading(true);
+      const success = await deleteHistoryItem(itemToDelete);
+      setIsLoading(false);
+      
+      if (success) {
+        toast({
+          title: "Item deleted",
+          description: "The history item has been removed."
+        });
+        if (onDelete) onDelete();
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to delete the history item.",
+          variant: "destructive"
+        });
+      }
+    }
+    setIsDeleteDialogOpen(false);
+    setItemToDelete(null);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -45,8 +93,18 @@ export const SearchHistoryList = ({ searchHistory }: SearchHistoryListProps) => 
         {searchHistory.length > 0 ? (
           <div className="space-y-4">
             {searchHistory.map((item) => (
-              <div key={item.id} className="border rounded-md p-4">
-                <div className="flex justify-between">
+              <div key={item.id} className="border rounded-md p-4 relative">
+                <div className="absolute top-2 right-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDeleteItem(item.id)}
+                    aria-label="Delete item"
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+                <div className="flex justify-between pr-8">
                   <div className="font-medium flex items-center">
                     <span className="mr-2">{getTypeIcon(item.type)}</span>
                     <span className="capitalize">{item.type} Detection</span>
@@ -93,6 +151,24 @@ export const SearchHistoryList = ({ searchHistory }: SearchHistoryListProps) => 
           </div>
         )}
       </CardContent>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this history item.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} disabled={isLoading}>
+              {isLoading ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };

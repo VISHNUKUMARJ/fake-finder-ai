@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -8,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { getSearchHistory, SearchHistoryItem } from "@/utils/historyManager";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import ActivityHistory from "@/components/dashboard/ActivityHistory";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -25,34 +25,33 @@ const Dashboard = () => {
   });
   const [isLearnMoreOpen, setIsLearnMoreOpen] = useState(false);
   
-  useEffect(() => {
-    // Load search history
-    const loadHistory = async () => {
-      const history = await getSearchHistory();
-      setSearchHistory(history);
-      
-      // Calculate stats
-      const calcStats = {
-        totalDetections: history.length,
-        manipulatedDetections: history.filter(item => item.result).length,
-        authenticDetections: history.filter(item => !item.result).length,
-        byType: {} as Record<string, { total: number; manipulated: number }>
-      };
-      
-      // Group by type
-      history.forEach(item => {
-        if (!calcStats.byType[item.type]) {
-          calcStats.byType[item.type] = { total: 0, manipulated: 0 };
-        }
-        calcStats.byType[item.type].total += 1;
-        if (item.result) {
-          calcStats.byType[item.type].manipulated += 1;
-        }
-      });
-      
-      setStats(calcStats);
+  const loadHistory = async () => {
+    const history = await getSearchHistory();
+    setSearchHistory(history);
+    
+    // Calculate stats
+    const calcStats = {
+      totalDetections: history.length,
+      manipulatedDetections: history.filter(item => item.result).length,
+      authenticDetections: history.filter(item => !item.result).length,
+      byType: {} as Record<string, { total: number; manipulated: number }>
     };
     
+    // Group by type
+    history.forEach(item => {
+      if (!calcStats.byType[item.type]) {
+        calcStats.byType[item.type] = { total: 0, manipulated: 0 };
+      }
+      calcStats.byType[item.type].total += 1;
+      if (item.result) {
+        calcStats.byType[item.type].manipulated += 1;
+      }
+    });
+    
+    setStats(calcStats);
+  };
+  
+  useEffect(() => {
     loadHistory();
   }, []);
   
@@ -155,53 +154,7 @@ const Dashboard = () => {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Search className="h-5 w-5" />
-                Recent Activity
-              </CardTitle>
-              <CardDescription>Your recent detection activities</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {searchHistory.length > 0 ? (
-                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
-                  {searchHistory.slice(0, 5).map((item) => (
-                    <div key={item.id} className="flex justify-between items-center border-b pb-2">
-                      <div className="flex items-center gap-2">
-                        {getTypeIcon(item.type)}
-                        <div>
-                          <p className="text-sm font-medium capitalize">{item.type} Detection</p>
-                          <p className="text-xs text-muted-foreground">
-                            {item.filename || item.textSnippet?.substring(0, 20) || "Content"}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {formatDate(item.date)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-6 text-muted-foreground">
-                  No recent activities found
-                </div>
-              )}
-            </CardContent>
-            {searchHistory.length > 0 && (
-              <CardFooter>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full"
-                  onClick={() => navigate('/profile')}
-                >
-                  View All History
-                </Button>
-              </CardFooter>
-            )}
-          </Card>
+          <ActivityHistory items={searchHistory.slice(0, 5)} onDelete={loadHistory} />
           
           <Card>
             <CardHeader>
