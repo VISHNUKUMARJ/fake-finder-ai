@@ -4,14 +4,14 @@ import { DetectionMethod } from "@/types/detection";
 // Image detection methods
 export const imageDetectionMethods: DetectionMethod[] = [
   { 
-    name: "Metadata Analysis", 
-    weight: 0.25,
-    description: "Examines image EXIF data for AI generation fingerprints and tampering signs."
+    name: "Watermark Detection", 
+    weight: 0.3,
+    description: "Identifies invisible AI watermarks embedded by generation tools like DALL-E, Midjourney, and Stable Diffusion."
   },
   { 
     name: "Error Level Analysis", 
-    weight: 0.25,
-    description: "Detects inconsistencies in compression patterns typical in AI-generated images."
+    weight: 0.3,
+    description: "Detects inconsistencies in compression artifacts and noise patterns typical in AI-generated images."
   },
   { 
     name: "Face Detection & Analysis", 
@@ -20,7 +20,7 @@ export const imageDetectionMethods: DetectionMethod[] = [
   },
   { 
     name: "Neural Network Pattern Recognition", 
-    weight: 0.3,
-    description: "Uses deep learning to detect AI model-specific generation patterns."
+    weight: 0.2,
+    description: "Uses deep learning to detect model-specific generation patterns and artifacts."
   }
 ];

@@ -4,23 +4,23 @@ import { DetectionMethod } from "@/types/detection";
 // Audio detection methods
 export const audioDetectionMethods: DetectionMethod[] = [
   { 
-    name: "Spectral Analysis", 
+    name: "Spectral Pattern Analysis", 
     weight: 0.25,
-    description: "Examines audio frequencies for unnatural patterns."
+    description: "Examines frequency patterns for synthetic generation artifacts."
   },
   { 
-    name: "Voice Pattern Recognition", 
+    name: "Voice Consistency Detection", 
     weight: 0.3,
-    description: "Analyzes voice characteristics for consistency."
+    description: "Analyzes micro-variations in voice tone, pitch, and timbre for authenticity."
   },
   { 
-    name: "Acoustic Inconsistency Detection", 
+    name: "Background Noise Analysis", 
     weight: 0.2,
-    description: "Identifies unnatural background noise and transitions."
+    description: "Identifies unnatural audio environments and inconsistent background sounds."
   },
   { 
-    name: "Neural Audio Analysis", 
+    name: "AI Voice Model Detection", 
     weight: 0.25,
-    description: "Uses deep learning to detect AI synthesis artifacts."
+    description: "Identifies specific patterns consistent with popular voice synthesis models."
   }
 ];

@@ -4,23 +4,23 @@ import { DetectionMethod } from "@/types/detection";
 // Video detection methods
 export const videoDetectionMethods: DetectionMethod[] = [
   { 
-    name: "Facial Movement Analysis", 
-    weight: 0.25,
-    description: "Examines unnatural facial expressions and blinking."
+    name: "Facial Consistency Analysis", 
+    weight: 0.3,
+    description: "Detects unnatural facial movements, blinking patterns, and micro-expressions."
   },
   { 
     name: "Audio-Visual Sync Detection", 
-    weight: 0.2,
-    description: "Checks if lip movements match the audio track."
+    weight: 0.25,
+    description: "Identifies mismatches between lip movements and speech audio."
   },
   { 
     name: "Temporal Consistency Check", 
     weight: 0.2,
-    description: "Detects inconsistencies in lighting, shadows, and movements."
+    description: "Analyzes frame-to-frame consistency in lighting, shadows, and physical objects."
   },
   { 
-    name: "Deep Neural Network Analysis", 
-    weight: 0.35,
-    description: "Uses AI to identify patterns typical of deepfake generation."
+    name: "DeepFake Signature Detection", 
+    weight: 0.25,
+    description: "Identifies telltale artifacts and patterns left by deepfake generation models."
   }
 ];
