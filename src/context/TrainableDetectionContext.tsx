@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect } from "react";
 import { DetectionType } from "@/types/detection";
 import { useToast } from "@/components/ui/use-toast";
@@ -114,7 +115,7 @@ export const TrainableDetectionProvider = ({ children }: { children: React.React
             .eq('id', session.session.user.id)
             .single();
             
-          if (profileData && profileData.is_admin) {
+          if (profileData?.is_admin) {
             setIsAdmin(true);
             
             const currentUserData = JSON.parse(localStorage.getItem("fakefinder_user") || "{}");
@@ -134,15 +135,15 @@ export const TrainableDetectionProvider = ({ children }: { children: React.React
     checkAdminStatus();
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (_event, session) => {
         if (session?.user) {
           const { data: profileData } = await supabase
             .from('profiles')
             .select('is_admin')
-            .eq('id', session.session.user.id)
+            .eq('id', session.user.id)
             .single();
             
-          if (profileData && profileData.is_admin) {
+          if (profileData?.is_admin) {
             setIsAdmin(true);
             
             const currentUserData = JSON.parse(localStorage.getItem("fakefinder_user") || "{}");

@@ -1,6 +1,8 @@
+
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { createContext, useContext, ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -9,6 +11,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LogOut, Sun, Moon, Languages } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTrainableDetection } from "@/context/TrainableDetectionContext";
 
@@ -151,7 +157,8 @@ const Settings = () => {
     });
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     localStorage.removeItem("fakefinder_isLoggedIn");
     localStorage.removeItem("fakefinder_user");
     toast({
@@ -229,11 +236,6 @@ const Settings = () => {
                   <SelectItem value="english">English</SelectItem>
                   <SelectItem value="spanish">Español</SelectItem>
                   <SelectItem value="french">Français</SelectItem>
-                  <SelectItem value="german">Deutsch</SelectItem>
-                  <SelectItem value="chinese">中文</SelectItem>
-                  <SelectItem value="japanese">日本語</SelectItem>
-                  <SelectItem value="arabic">العربية</SelectItem>
-                  <SelectItem value="hindi">हिन्दी</SelectItem>
                 </SelectContent>
               </Select>
             </div>
