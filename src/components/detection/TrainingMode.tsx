@@ -1,13 +1,13 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { FileUploader } from "@/components/detection/FileUploader";
-import { Brain, CheckCircle, AlertCircle } from "lucide-react";
+import { Brain, CheckCircle, AlertCircle, ShieldAlert } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { DetectionType } from "@/types/detection";
+import { useTrainableDetection } from "@/context/TrainableDetectionContext";
 
 interface TrainingDatasetItem {
   file?: File;
@@ -21,6 +21,7 @@ interface TrainingModeProps {
 }
 
 export const TrainingMode = ({ type, onClose }: TrainingModeProps) => {
+  const { isAdmin } = useTrainableDetection();
   const [activeTab, setActiveTab] = useState<"upload" | "train" | "test">("upload");
   const [trainingDataset, setTrainingDataset] = useState<TrainingDatasetItem[]>([]);
   const [testingDataset, setTestingDataset] = useState<TrainingDatasetItem[]>([]);
@@ -44,6 +45,17 @@ export const TrainingMode = ({ type, onClose }: TrainingModeProps) => {
     }
   }>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (!isAdmin) {
+      toast({
+        variant: "destructive",
+        title: "Access Denied",
+        description: "Only administrators can access model training features.",
+      });
+      onClose();
+    }
+  }, [isAdmin, onClose, toast]);
 
   const handleFileUpload = (file: File | null, label: "authentic" | "manipulated", dataset: "training" | "testing") => {
     if (!file) return;
@@ -88,14 +100,12 @@ export const TrainingMode = ({ type, onClose }: TrainingModeProps) => {
     setIsTraining(true);
     setTrainingProgress(0);
     
-    // Simulate training progress
     const interval = setInterval(() => {
       setTrainingProgress(prev => {
         if (prev >= 100) {
           clearInterval(interval);
           setIsTraining(false);
           
-          // Generate simulated training results
           setTrainingResults({
             accuracy: 0.85 + Math.random() * 0.1,
             precision: 0.82 + Math.random() * 0.12,
@@ -132,14 +142,12 @@ export const TrainingMode = ({ type, onClose }: TrainingModeProps) => {
     setIsTesting(true);
     setTestingProgress(0);
     
-    // Simulate testing progress
     const interval = setInterval(() => {
       setTestingProgress(prev => {
         if (prev >= 100) {
           clearInterval(interval);
           setIsTesting(false);
           
-          // Generate simulated testing results
           const truePositives = Math.floor(testingDataset.length * 0.4);
           const trueNegatives = Math.floor(testingDataset.length * 0.35);
           const falsePositives = Math.floor(testingDataset.length * 0.15);
@@ -183,6 +191,33 @@ export const TrainingMode = ({ type, onClose }: TrainingModeProps) => {
       </div>
     );
   };
+
+  if (!isAdmin) {
+    return (
+      <Card className="w-full max-w-3xl mx-auto">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShieldAlert className="h-5 w-5 text-red-500" />
+            Access Denied
+          </CardTitle>
+          <CardDescription>
+            This feature requires administrator privileges
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <ShieldAlert className="h-16 w-16 text-red-500 mb-4" />
+          <h3 className="text-xl font-medium mb-2">Administrator Access Required</h3>
+          <p className="text-center text-muted-foreground mb-6 max-w-md">
+            Only administrators can train and test detection models. 
+            Please contact your system administrator if you need access to this feature.
+          </p>
+          <Button onClick={onClose}>
+            Go Back
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full max-w-3xl mx-auto">

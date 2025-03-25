@@ -1,15 +1,16 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { ChevronDown, Globe, Database, Brain, RefreshCw, Download } from "lucide-react";
+import { ChevronDown, Globe, Database, Brain, RefreshCw, Download, ShieldAlert } from "lucide-react";
 import { useTrainableDetection, getAvailableDatasets } from "@/context/TrainableDetectionContext";
 import { DetectionType } from "@/types/detection";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/components/ui/use-toast";
 
 interface OnlineDatasetTrainingProps {
   type: DetectionType;
@@ -17,7 +18,7 @@ interface OnlineDatasetTrainingProps {
 }
 
 export const OnlineDatasetTraining = ({ type, onClose }: OnlineDatasetTrainingProps) => {
-  const { modelState, trainModel, testModel, downloadPretrainedModel } = useTrainableDetection();
+  const { modelState, trainModel, testModel, downloadPretrainedModel, isAdmin } = useTrainableDetection();
   const [activeTab, setActiveTab] = useState<"browse" | "train" | "test">("browse");
   const [selectedDataset, setSelectedDataset] = useState<string>("");
   const [customDatasetUrl, setCustomDatasetUrl] = useState<string>("");
@@ -27,22 +28,43 @@ export const OnlineDatasetTraining = ({ type, onClose }: OnlineDatasetTrainingPr
   const [isTraining, setIsTraining] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testResults, setTestResults] = useState<{accuracy: number} | null>(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
   
   const availableDatasets = getAvailableDatasets(type);
   const currentModel = modelState[type];
+
+  useEffect(() => {
+    if (!isAdmin) {
+      toast({
+        variant: "destructive",
+        title: "Access Denied",
+        description: "Only administrators can access model training features.",
+      });
+      onClose();
+    }
+  }, [isAdmin, onClose, toast]);
   
   const handleSelectDataset = (dataset: string) => {
     setSelectedDataset(dataset);
   };
   
   const handleStartTraining = async () => {
+    if (!isAdmin) {
+      toast({
+        variant: "destructive",
+        title: "Access Denied",
+        description: "Only administrators can train models.",
+      });
+      return;
+    }
+    
     const datasetUrl = selectedDataset || customDatasetUrl;
     if (!datasetUrl) return;
     
     setIsTraining(true);
     setTrainingProgress(0);
     
-    // Simulate progress updates
     const interval = setInterval(() => {
       setTrainingProgress(prev => {
         if (prev >= 95) {
@@ -56,7 +78,6 @@ export const OnlineDatasetTraining = ({ type, onClose }: OnlineDatasetTrainingPr
     try {
       await trainModel(type, datasetUrl, epochs);
       setTrainingProgress(100);
-      // Move to test tab after successful training
       setActiveTab("test");
     } catch (error) {
       console.error("Training error:", error);
@@ -67,10 +88,18 @@ export const OnlineDatasetTraining = ({ type, onClose }: OnlineDatasetTrainingPr
   };
   
   const handleDownloadPretrained = async () => {
+    if (!isAdmin) {
+      toast({
+        variant: "destructive",
+        title: "Access Denied",
+        description: "Only administrators can download pretrained models.",
+      });
+      return;
+    }
+    
     setIsTraining(true);
     setTrainingProgress(0);
     
-    // Simulate progress updates
     const interval = setInterval(() => {
       setTrainingProgress(prev => {
         if (prev >= 95) {
@@ -84,7 +113,6 @@ export const OnlineDatasetTraining = ({ type, onClose }: OnlineDatasetTrainingPr
     try {
       await downloadPretrainedModel(type);
       setTrainingProgress(100);
-      // Move to test tab after successful download
       setActiveTab("test");
     } catch (error) {
       console.error("Download error:", error);
@@ -95,6 +123,15 @@ export const OnlineDatasetTraining = ({ type, onClose }: OnlineDatasetTrainingPr
   };
   
   const handleTestModel = async () => {
+    if (!isAdmin) {
+      toast({
+        variant: "destructive",
+        title: "Access Denied",
+        description: "Only administrators can test models.",
+      });
+      return;
+    }
+    
     if (!testDatasetUrl && !selectedDataset) return;
     
     setIsTesting(true);
@@ -108,7 +145,34 @@ export const OnlineDatasetTraining = ({ type, onClose }: OnlineDatasetTrainingPr
       setIsTesting(false);
     }
   };
-  
+
+  if (!isAdmin) {
+    return (
+      <Card className="w-full max-w-3xl mx-auto">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShieldAlert className="h-5 w-5 text-red-500" />
+            Access Denied
+          </CardTitle>
+          <CardDescription>
+            This feature requires administrator privileges
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <ShieldAlert className="h-16 w-16 text-red-500 mb-4" />
+          <h3 className="text-xl font-medium mb-2">Administrator Access Required</h3>
+          <p className="text-center text-muted-foreground mb-6 max-w-md">
+            Only administrators can train and test detection models. 
+            Please contact your system administrator if you need access to this feature.
+          </p>
+          <Button onClick={onClose}>
+            Go Back
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="w-full max-w-3xl mx-auto">
       <CardHeader>

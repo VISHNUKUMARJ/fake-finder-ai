@@ -1,7 +1,7 @@
-
 import { createContext, useContext, useState, useEffect } from "react";
 import { DetectionType } from "@/types/detection";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ModelTrainingState {
   isCustomTrained: boolean;
@@ -18,6 +18,8 @@ interface TrainableDetectionContextType {
   trainModel: (type: DetectionType, datasetUrl: string, epochs?: number) => Promise<void>;
   testModel: (type: DetectionType, testDatasetUrl: string) => Promise<{accuracy: number}>;
   downloadPretrainedModel: (type: DetectionType) => Promise<void>;
+  isAdmin: boolean;
+  checkingAdminStatus: boolean;
 }
 
 const initialModelState: Record<DetectionType, ModelTrainingState> = {
@@ -32,7 +34,7 @@ const availableDatasets = {
   image: [
     "https://www.kaggle.com/datasets/xhlulu/fake-faces",
     "https://www.kaggle.com/datasets/ciplab/real-and-fake-face-detection",
-    "https://www.kaggle.com/datasets/diegojeda/deepfake-faces"
+    "https://www.kaggle.com/datasets/deepfaketimit/deepfake-timit-dataset"
   ],
   video: [
     "https://www.kaggle.com/datasets/awsaf49/dfdc-deepfake-detection-challenge",
@@ -81,11 +83,58 @@ const TrainableDetectionContext = createContext<TrainableDetectionContextType>({
   trainModel: async () => {},
   testModel: async () => ({ accuracy: 0 }),
   downloadPretrainedModel: async () => {},
+  isAdmin: false,
+  checkingAdminStatus: true,
 });
 
 export const TrainableDetectionProvider = ({ children }: { children: React.ReactNode }) => {
   const [modelState, setModelState] = useState<Record<DetectionType, ModelTrainingState>>(initialModelState);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [checkingAdminStatus, setCheckingAdminStatus] = useState(true);
   const { toast } = useToast();
+  
+  // Check if the current user is an admin
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          // For now, we're simulating admin check based on the user's email
+          // In a real app, this would check against a roles table in the database
+          const isUserAdmin = session.user.email?.endsWith('@admin.com') || false;
+          setIsAdmin(isUserAdmin);
+        } else {
+          setIsAdmin(false);
+        }
+      } catch (error) {
+        console.error("Error checking admin status:", error);
+        setIsAdmin(false);
+      } finally {
+        setCheckingAdminStatus(false);
+      }
+    };
+    
+    checkAdminStatus();
+    
+    // Set up auth state listener to update admin status when auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session?.user) {
+          // Same admin check as above
+          const isUserAdmin = session.user.email?.endsWith('@admin.com') || false;
+          setIsAdmin(isUserAdmin);
+        } else {
+          setIsAdmin(false);
+        }
+        setCheckingAdminStatus(false);
+      }
+    );
+    
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
   
   // Load saved models from localStorage on mount
   useEffect(() => {
@@ -131,8 +180,17 @@ export const TrainableDetectionProvider = ({ children }: { children: React.React
     }));
   };
   
-  // Update trainModel to match the Promise<void> return type
   const trainModel = async (type: DetectionType, datasetUrl: string, epochs = 10): Promise<void> => {
+    // Check if user is admin
+    if (!isAdmin) {
+      toast({
+        variant: "destructive",
+        title: "Access Denied",
+        description: "Only administrators can train models.",
+      });
+      throw new Error("Admin access required to train models");
+    }
+    
     // Start training
     updateModelState(type, { isTraining: true });
     
@@ -178,8 +236,6 @@ export const TrainableDetectionProvider = ({ children }: { children: React.React
         title: "Training Complete",
         description: `${type} model successfully trained with ${(newAccuracy * 100).toFixed(1)}% accuracy.`,
       });
-      
-      // Remove the return statement that was causing the type error
     } catch (error) {
       console.error(`Error training ${type} model:`, error);
       
@@ -195,8 +251,17 @@ export const TrainableDetectionProvider = ({ children }: { children: React.React
     }
   };
   
-  // Test model with a dataset
   const testModel = async (type: DetectionType, testDatasetUrl: string) => {
+    // Check if user is admin
+    if (!isAdmin) {
+      toast({
+        variant: "destructive",
+        title: "Access Denied",
+        description: "Only administrators can test models.",
+      });
+      throw new Error("Admin access required to test models");
+    }
+    
     toast({
       title: "Testing Model",
       description: `Testing ${type} detection model with dataset. This won't take long.`,
@@ -230,8 +295,17 @@ export const TrainableDetectionProvider = ({ children }: { children: React.React
     }
   };
   
-  // Download a pretrained model
   const downloadPretrainedModel = async (type: DetectionType) => {
+    // Check if user is admin
+    if (!isAdmin) {
+      toast({
+        variant: "destructive",
+        title: "Access Denied",
+        description: "Only administrators can download pretrained models.",
+      });
+      throw new Error("Admin access required to download pretrained models");
+    }
+    
     updateModelState(type, { isTraining: true });
     
     toast({
@@ -279,7 +353,9 @@ export const TrainableDetectionProvider = ({ children }: { children: React.React
       updateModelState, 
       trainModel, 
       testModel, 
-      downloadPretrainedModel 
+      downloadPretrainedModel,
+      isAdmin,
+      checkingAdminStatus
     }}>
       {children}
     </TrainableDetectionContext.Provider>

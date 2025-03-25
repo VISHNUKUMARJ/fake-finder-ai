@@ -3,18 +3,19 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { Brain, BarChart, Zap, Globe } from "lucide-react";
+import { Brain, BarChart, Zap, Globe, Lock } from "lucide-react";
 import { DetectionType } from "@/types/detection";
 import { useTrainableDetection } from "@/context/TrainableDetectionContext";
 import { TrainingMode } from "@/components/detection/TrainingMode";
 import { OnlineDatasetTraining } from "@/components/detection/OnlineDatasetTraining";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ModelStatusCardProps {
   type: DetectionType;
 }
 
 export const ModelStatusCard = ({ type }: ModelStatusCardProps) => {
-  const { modelState } = useTrainableDetection();
+  const { modelState, isAdmin, checkingAdminStatus } = useTrainableDetection();
   const model = modelState[type];
   const [dialogOpen, setDialogOpen] = useState(false);
   const [trainingMode, setTrainingMode] = useState<"custom" | "online">("custom");
@@ -69,31 +70,60 @@ export const ModelStatusCard = ({ type }: ModelStatusCardProps) => {
         )}
         
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <div className="flex gap-2">
-            <DialogTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full gap-1"
-                onClick={() => setTrainingMode("custom")}
-              >
-                <Zap className="h-3 w-3" />
-                Train Model
+          {checkingAdminStatus ? (
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="w-full gap-1" disabled>
+                <span className="animate-pulse">Checking permissions...</span>
               </Button>
-            </DialogTrigger>
-            
-            <DialogTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full gap-1"
-                onClick={() => setTrainingMode("online")}
-              >
-                <Globe className="h-3 w-3" />
-                Online Datasets
-              </Button>
-            </DialogTrigger>
-          </div>
+            </div>
+          ) : isAdmin ? (
+            <div className="flex gap-2">
+              <DialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full gap-1"
+                  onClick={() => setTrainingMode("custom")}
+                >
+                  <Zap className="h-3 w-3" />
+                  Train Model
+                </Button>
+              </DialogTrigger>
+              
+              <DialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full gap-1"
+                  onClick={() => setTrainingMode("online")}
+                >
+                  <Globe className="h-3 w-3" />
+                  Online Datasets
+                </Button>
+              </DialogTrigger>
+            </div>
+          ) : (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full gap-1"
+                      disabled
+                    >
+                      <Lock className="h-3 w-3" />
+                      Admin Only
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Only administrators can train and test models</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
           
           <DialogContent className="max-w-4xl">
             {trainingMode === "custom" ? (
