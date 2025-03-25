@@ -81,5 +81,4 @@ const ImageDetection = () => {
     </AppLayout>
   );
 };
-
 export default ImageDetection;
