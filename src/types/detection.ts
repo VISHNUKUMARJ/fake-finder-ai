@@ -15,6 +15,7 @@ export interface DetectionMethod {
   name: string;
   weight: number;
   description?: string;
+  type: string; // Add the 'type' property that was missing
 }
 
 export interface DetectionResult {

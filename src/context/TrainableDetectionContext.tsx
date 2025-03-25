@@ -131,8 +131,8 @@ export const TrainableDetectionProvider = ({ children }: { children: React.React
     }));
   };
   
-  // Simulate model training with dataset URLs
-  const trainModel = async (type: DetectionType, datasetUrl: string, epochs = 10) => {
+  // Update trainModel to match the Promise<void> return type
+  const trainModel = async (type: DetectionType, datasetUrl: string, epochs = 10): Promise<void> => {
     // Start training
     updateModelState(type, { isTraining: true });
     
@@ -179,7 +179,7 @@ export const TrainableDetectionProvider = ({ children }: { children: React.React
         description: `${type} model successfully trained with ${(newAccuracy * 100).toFixed(1)}% accuracy.`,
       });
       
-      return { success: true };
+      // Remove the return statement that was causing the type error
     } catch (error) {
       console.error(`Error training ${type} model:`, error);
       
