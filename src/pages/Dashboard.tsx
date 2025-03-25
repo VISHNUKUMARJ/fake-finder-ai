@@ -1,11 +1,25 @@
-import AppLayout from "@/components/layout/AppLayout";
+
+import { AppLayout } from "@/components/layout/AppLayout";
 import ActivityHistory from "@/components/dashboard/ActivityHistory";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Rocket, ImageIcon, Film, Mic, TextQuote } from "lucide-react";
 import { ModelStatusCard } from "@/components/dashboard/ModelStatusCard";
+import { useState, useEffect } from "react";
+import { SearchHistoryItem, getHistoryItems } from "@/utils/historyManager";
 
 const Dashboard = () => {
+  const [historyItems, setHistoryItems] = useState<SearchHistoryItem[]>([]);
+  
+  const loadHistoryItems = async () => {
+    const items = await getHistoryItems();
+    setHistoryItems(items);
+  };
+  
+  useEffect(() => {
+    loadHistoryItems();
+  }, []);
+  
   return (
     <AppLayout>
       <div className="container py-6 space-y-8">
@@ -87,7 +101,7 @@ const Dashboard = () => {
         {/* Recent Activity */}
         <div>
           <h2 className="text-2xl font-bold mb-4">Recent Activity</h2>
-          <ActivityHistory />
+          <ActivityHistory items={historyItems} onDelete={loadHistoryItems} />
         </div>
       </div>
     </AppLayout>
