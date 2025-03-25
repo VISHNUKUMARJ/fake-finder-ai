@@ -20,6 +20,7 @@ interface TrainableDetectionContextType {
   downloadPretrainedModel: (type: DetectionType) => Promise<void>;
   isAdmin: boolean;
   checkingAdminStatus: boolean;
+  promoteToAdmin: (userId: string) => Promise<boolean>;
 }
 
 const initialModelState: Record<DetectionType, ModelTrainingState> = {
@@ -29,7 +30,6 @@ const initialModelState: Record<DetectionType, ModelTrainingState> = {
   text: { isCustomTrained: false, accuracy: 0.85, modelVersion: "default-v1", isTraining: false },
 };
 
-// Available online datasets for each detection type
 const availableDatasets = {
   image: [
     "https://www.kaggle.com/datasets/xhlulu/fake-faces",
@@ -53,7 +53,6 @@ const availableDatasets = {
   ]
 };
 
-// Pretrained model sources
 const pretrainedModels = {
   image: {
     url: "https://huggingface.co/deepinsight/inceptionv3-transfer-learning",
@@ -85,31 +84,48 @@ const TrainableDetectionContext = createContext<TrainableDetectionContextType>({
   downloadPretrainedModel: async () => {},
   isAdmin: false,
   checkingAdminStatus: true,
+  promoteToAdmin: () => Promise.resolve(false),
 });
 
 export const TrainableDetectionProvider = ({ children }: { children: React.ReactNode }) => {
   const [modelState, setModelState] = useState<Record<DetectionType, ModelTrainingState>>(initialModelState);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [checkingAdminStatus, setCheckingAdminStatus] = useState(true);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [checkingAdminStatus, setCheckingAdminStatus] = useState<boolean>(true);
   const { toast } = useToast();
   
-  // Check if the current user is an admin
   useEffect(() => {
     const checkAdminStatus = async () => {
+      setCheckingAdminStatus(true);
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const userData = JSON.parse(localStorage.getItem("fakefinder_user") || "{}");
         
-        if (session?.user) {
-          // For now, we're simulating admin check based on the user's email
-          // In a real app, this would check against a roles table in the database
-          const isUserAdmin = session.user.email?.endsWith('@admin.com') || false;
-          setIsAdmin(isUserAdmin);
-        } else {
-          setIsAdmin(false);
+        if (userData.isAdmin) {
+          setIsAdmin(true);
+          setCheckingAdminStatus(false);
+          return;
+        }
+        
+        const { data: session } = await supabase.auth.getSession();
+        
+        if (session.session?.user) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('is_admin')
+            .eq('id', session.session.user.id)
+            .single();
+            
+          if (profileData && profileData.is_admin) {
+            setIsAdmin(true);
+            
+            const currentUserData = JSON.parse(localStorage.getItem("fakefinder_user") || "{}");
+            localStorage.setItem("fakefinder_user", JSON.stringify({
+              ...currentUserData,
+              isAdmin: true
+            }));
+          }
         }
       } catch (error) {
         console.error("Error checking admin status:", error);
-        setIsAdmin(false);
       } finally {
         setCheckingAdminStatus(false);
       }
@@ -117,13 +133,24 @@ export const TrainableDetectionProvider = ({ children }: { children: React.React
     
     checkAdminStatus();
     
-    // Set up auth state listener to update admin status when auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         if (session?.user) {
-          // Same admin check as above
-          const isUserAdmin = session.user.email?.endsWith('@admin.com') || false;
-          setIsAdmin(isUserAdmin);
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('is_admin')
+            .eq('id', session.session.user.id)
+            .single();
+            
+          if (profileData && profileData.is_admin) {
+            setIsAdmin(true);
+            
+            const currentUserData = JSON.parse(localStorage.getItem("fakefinder_user") || "{}");
+            localStorage.setItem("fakefinder_user", JSON.stringify({
+              ...currentUserData,
+              isAdmin: true
+            }));
+          }
         } else {
           setIsAdmin(false);
         }
@@ -136,14 +163,12 @@ export const TrainableDetectionProvider = ({ children }: { children: React.React
     };
   }, []);
   
-  // Load saved models from localStorage on mount
   useEffect(() => {
     try {
       const savedModels = localStorage.getItem("trainedModels");
       if (savedModels) {
         const parsed = JSON.parse(savedModels);
         
-        // Convert lastTrainedAt strings back to Date objects
         Object.keys(parsed).forEach(key => {
           const type = key as DetectionType;
           if (parsed[type].lastTrainedAt) {
@@ -161,7 +186,6 @@ export const TrainableDetectionProvider = ({ children }: { children: React.React
     }
   }, []);
   
-  // Save models to localStorage when they change
   useEffect(() => {
     try {
       localStorage.setItem("trainedModels", JSON.stringify(modelState));
@@ -181,7 +205,6 @@ export const TrainableDetectionProvider = ({ children }: { children: React.React
   };
   
   const trainModel = async (type: DetectionType, datasetUrl: string, epochs = 10): Promise<void> => {
-    // Check if user is admin
     if (!isAdmin) {
       toast({
         variant: "destructive",
@@ -191,7 +214,6 @@ export const TrainableDetectionProvider = ({ children }: { children: React.React
       throw new Error("Admin access required to train models");
     }
     
-    // Start training
     updateModelState(type, { isTraining: true });
     
     toast({
@@ -199,22 +221,18 @@ export const TrainableDetectionProvider = ({ children }: { children: React.React
       description: `Training ${type} detection model with online dataset. This may take a few minutes.`,
     });
     
-    // Simulate training time (5-15 seconds)
     const trainingTime = 5000 + Math.random() * 10000;
     
     try {
-      // Simulate epoch training
       for (let i = 1; i <= epochs; i++) {
         await new Promise(resolve => setTimeout(resolve, trainingTime / epochs));
         console.log(`${type} model training: Epoch ${i}/${epochs} complete`);
       }
       
-      // Calculate new accuracy (improved from baseline with some randomness)
       const baselineAccuracy = modelState[type].accuracy;
-      const improvement = Math.min(0.15, 0.05 + Math.random() * 0.1); // 5-15% improvement
-      const newAccuracy = Math.min(0.98, baselineAccuracy + improvement); // Cap at 98%
+      const improvement = Math.min(0.15, 0.05 + Math.random() * 0.1);
+      const newAccuracy = Math.min(0.98, baselineAccuracy + improvement);
       
-      // Determine new model version
       const currentVersion = modelState[type].modelVersion;
       const versionMatch = currentVersion.match(/v(\d+)$/);
       const versionNumber = versionMatch ? parseInt(versionMatch[1]) : 1;
@@ -222,7 +240,6 @@ export const TrainableDetectionProvider = ({ children }: { children: React.React
         ? `custom-v${versionNumber + 1}` 
         : `custom-v1`;
       
-      // Update model state with new training results
       updateModelState(type, {
         isCustomTrained: true,
         accuracy: newAccuracy,
@@ -252,7 +269,6 @@ export const TrainableDetectionProvider = ({ children }: { children: React.React
   };
   
   const testModel = async (type: DetectionType, testDatasetUrl: string) => {
-    // Check if user is admin
     if (!isAdmin) {
       toast({
         variant: "destructive",
@@ -267,13 +283,11 @@ export const TrainableDetectionProvider = ({ children }: { children: React.React
       description: `Testing ${type} detection model with dataset. This won't take long.`,
     });
     
-    // Simulate testing time (2-5 seconds)
     await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
     
     try {
-      // Calculate test accuracy (slightly lower than trained with some variance)
       const trainedAccuracy = modelState[type].accuracy;
-      const variance = (Math.random() * 0.1) - 0.05; // ±5% variance
+      const variance = (Math.random() * 0.1) - 0.05;
       const testAccuracy = Math.max(0.5, Math.min(0.99, trainedAccuracy + variance));
       
       toast({
@@ -296,7 +310,6 @@ export const TrainableDetectionProvider = ({ children }: { children: React.React
   };
   
   const downloadPretrainedModel = async (type: DetectionType) => {
-    // Check if user is admin
     if (!isAdmin) {
       toast({
         variant: "destructive",
@@ -313,7 +326,6 @@ export const TrainableDetectionProvider = ({ children }: { children: React.React
       description: `Downloading pretrained ${type} detection model. This may take a few minutes.`,
     });
     
-    // Simulate download time (3-8 seconds)
     await new Promise(resolve => setTimeout(resolve, 3000 + Math.random() * 5000));
     
     try {
@@ -347,15 +359,33 @@ export const TrainableDetectionProvider = ({ children }: { children: React.React
     }
   };
   
+  const promoteToAdmin = async (userId: string): Promise<boolean> => {
+    if (!isAdmin) return false;
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_admin: true })
+        .eq('id', userId);
+        
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error("Error promoting user to admin:", error);
+      return false;
+    }
+  };
+
   return (
-    <TrainableDetectionContext.Provider value={{ 
+    <TrainableDetectionContext.Provider value={{
       modelState, 
       updateModelState, 
       trainModel, 
       testModel, 
       downloadPretrainedModel,
       isAdmin,
-      checkingAdminStatus
+      checkingAdminStatus,
+      promoteToAdmin,
     }}>
       {children}
     </TrainableDetectionContext.Provider>
@@ -364,5 +394,4 @@ export const TrainableDetectionProvider = ({ children }: { children: React.React
 
 export const useTrainableDetection = () => useContext(TrainableDetectionContext);
 
-// Export available datasets for use in components
 export const getAvailableDatasets = (type: DetectionType) => availableDatasets[type];
