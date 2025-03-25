@@ -203,6 +203,7 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          is_admin: boolean | null
           name: string | null
         }
         Insert: {
@@ -210,6 +211,7 @@ export type Database = {
           created_at?: string
           email: string
           id: string
+          is_admin?: boolean | null
           name?: string | null
         }
         Update: {
@@ -217,6 +219,7 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          is_admin?: boolean | null
           name?: string | null
         }
         Relationships: []

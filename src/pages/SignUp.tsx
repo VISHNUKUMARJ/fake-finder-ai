@@ -59,11 +59,33 @@ const SignUp = () => {
       
       // Store user info
       if (data.user) {
+        // Check if this is the first user - make them admin
+        const { count, error: countError } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true });
+          
+        const isFirstUser = count === 0 || count === null;
+        
+        // If first user or email ends with @admin.com, make them admin
+        const isAdmin = isFirstUser || email.endsWith('@admin.com');
+        
+        // Wait for the trigger to create the profile
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Update the profile to set admin status if needed
+        if (isAdmin) {
+          await supabase
+            .from('profiles')
+            .update({ is_admin: true })
+            .eq('id', data.user.id);
+        }
+        
         localStorage.setItem("fakefinder_user", JSON.stringify({
           id: data.user.id,
           name: name,
           email: data.user.email,
-          avatar: null
+          avatar: null,
+          isAdmin: isAdmin
         }));
       }
       

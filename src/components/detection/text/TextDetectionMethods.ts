@@ -6,22 +6,26 @@ export const textDetectionMethods: DetectionMethod[] = [
   { 
     name: "Pattern Recognition", 
     weight: 0.25,
-    description: "Analyzes text for statistical patterns common in AI-generated content."
+    description: "Analyzes text for statistical patterns common in AI-generated content.",
+    type: "text-analysis"
   },
   { 
     name: "Perplexity & Burstiness", 
     weight: 0.25,
-    description: "Measures text predictability and variation patterns typical of AI models."
+    description: "Measures text predictability and variation patterns typical of AI models.",
+    type: "text-analysis"
   },
   { 
     name: "Stylometric Fingerprinting", 
     weight: 0.25,
-    description: "Examines writing style, word choice, and sentence structures."
+    description: "Examines writing style, word choice, and sentence structures.",
+    type: "text-analysis"
   },
   { 
     name: "Semantic Coherence Analysis", 
     weight: 0.25,
-    description: "Evaluates logical flow, factual grounding, and narrative consistency."
+    description: "Evaluates logical flow, factual grounding, and narrative consistency.",
+    type: "text-analysis"
   }
 ];
 

@@ -45,18 +45,24 @@ export const LoginForm = ({ onForgotPassword }: LoginFormProps) => {
       
       // Store user info
       if (data.user) {
-        const { data: profileData } = await supabase
+        // Fetch user profile including admin status
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', data.user.id)
           .single();
+          
+        if (profileError) {
+          console.error("Error fetching profile:", profileError);
+        }
           
         if (profileData) {
           localStorage.setItem("fakefinder_user", JSON.stringify({
             id: data.user.id,
             name: profileData.name,
             email: data.user.email,
-            avatar: profileData.avatar
+            avatar: profileData.avatar,
+            isAdmin: profileData.is_admin || false
           }));
         }
       }
