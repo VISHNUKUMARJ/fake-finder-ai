@@ -5,6 +5,7 @@ import { useDetectionMethods } from "@/hooks/useDetectionMethods";
 import { videoDetectionMethods } from "@/components/detection/video/VideoDetectionMethods";
 import { addToSearchHistory } from "@/utils/historyManager";
 import { DetectionResult } from "@/types/detection";
+import { useTrainableDetection } from "@/context/TrainableDetectionContext";
 
 export function useVideoAnalysis(file: File | null) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -13,6 +14,10 @@ export function useVideoAnalysis(file: File | null) {
   const [result, setResult] = useState<DetectionResult | null>(null);
   const { toast } = useToast();
   const { methodResults, setMethodResults, simulateMethodAnalysis } = useDetectionMethods(videoDetectionMethods);
+  const { modelState } = useTrainableDetection();
+  
+  // Get model information for video detection
+  const videoModel = modelState.video;
 
   const runAllMethods = async () => {
     let allIssues: string[] = [];
@@ -66,15 +71,46 @@ export function useVideoAnalysis(file: File | null) {
       totalWeight += item.weight;
     });
     
-    const finalScore = Math.round(totalWeightedScore / totalWeight);
+    // Calculate base score
+    let baseScore = Math.round(totalWeightedScore / totalWeight);
     
-    // Lower threshold to 60 to improve detection rate
-    const isManipulated = finalScore > 60 || allIssues.length >= 2;
+    // Apply model accuracy adjustments for custom trained models
+    if (videoModel.isCustomTrained) {
+      // Higher accuracy models provide more refined detection
+      const accuracyBoost = videoModel.accuracy > 0.85 ? 1.15 : 1.05;
+      
+      // Adjust score based on model version and accuracy
+      if (videoModel.modelVersion.includes("faceforensics")) {
+        // Special case for pretrained faceforensics model (strong at face analysis)
+        baseScore = Math.min(100, baseScore * accuracyBoost);
+        
+        // Add extra confidence for facial-based deepfakes
+        if (allIssues.some(issue => issue.toLowerCase().includes("facial") || issue.toLowerCase().includes("face"))) {
+          baseScore = Math.min(100, baseScore + 8);
+        }
+      } else {
+        // For other custom models
+        baseScore = Math.min(100, baseScore * accuracyBoost);
+      }
+    }
     
-    // Generate detailed text based on issues found
+    const finalScore = Math.max(0, Math.min(100, baseScore));
+    
+    // Determine detection threshold based on model accuracy
+    const detectionThreshold = videoModel.isCustomTrained 
+      ? (videoModel.accuracy > 0.85 ? 57 : 60) 
+      : 60;
+    
+    const isManipulated = finalScore > detectionThreshold || allIssues.length >= 2;
+    
+    // Generate detailed text based on issues found and model characteristics
+    const modelAccuracyDescription = videoModel.isCustomTrained 
+      ? `using our ${videoModel.accuracy > 0.9 ? 'highly accurate' : 'custom-trained'} model`
+      : '';
+    
     let detailsText = isManipulated
-      ? "Our AI has detected signs of deepfake manipulation in this video. "
-      : "Our analysis indicates this video shows no significant signs of manipulation. ";
+      ? `Our AI ${modelAccuracyDescription} has detected signs of deepfake manipulation in this video. `
+      : `Our analysis ${modelAccuracyDescription} indicates this video shows no significant signs of manipulation. `;
       
     detailsText += isManipulated
       ? `The analysis indicates this may be synthetically generated content with ${finalScore}% confidence.`

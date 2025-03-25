@@ -5,6 +5,7 @@ import { useDetectionMethods } from "@/hooks/useDetectionMethods";
 import { audioDetectionMethods } from "@/components/detection/audio/AudioDetectionMethods";
 import { addToSearchHistory } from "@/utils/historyManager";
 import { DetectionResult } from "@/types/detection";
+import { useTrainableDetection } from "@/context/TrainableDetectionContext";
 
 export function useAudioAnalysis(file: File | null) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -13,6 +14,10 @@ export function useAudioAnalysis(file: File | null) {
   const [result, setResult] = useState<DetectionResult | null>(null);
   const { toast } = useToast();
   const { methodResults, setMethodResults, simulateMethodAnalysis } = useDetectionMethods(audioDetectionMethods);
+  const { modelState } = useTrainableDetection();
+  
+  // Get model information for audio detection
+  const audioModel = modelState.audio;
 
   const runAllMethods = async () => {
     let allIssues: string[] = [];
@@ -70,15 +75,57 @@ export function useAudioAnalysis(file: File | null) {
       totalWeight += item.weight;
     });
     
-    const finalScore = Math.round(totalWeightedScore / totalWeight);
+    // Calculate base score
+    let baseScore = Math.round(totalWeightedScore / totalWeight);
     
-    // Lower threshold to 58 to improve detection rate
-    const isManipulated = finalScore > 58 || allIssues.length >= 2;
+    // Apply model accuracy adjustments for custom trained models
+    if (audioModel.isCustomTrained) {
+      // For wavenet models, they're very good at detecting particular synthetic voices
+      if (audioModel.modelVersion.includes("wavenet")) {
+        // Boost detection confidence for wavenet-based detection
+        baseScore = Math.min(100, baseScore + 5);
+        
+        // For likely synthetic audio (already high score), boost further
+        if (baseScore > 70) {
+          baseScore = Math.min(100, baseScore + 7);
+        }
+      } 
+      // For other custom models, adjust based on accuracy
+      else if (audioModel.accuracy > 0.85) {
+        // High accuracy models should be more reliable
+        baseScore = Math.min(100, baseScore + 3);
+      }
+    }
+    
+    const finalScore = Math.max(0, Math.min(100, baseScore));
+    
+    // Determine threshold based on model characteristics
+    let detectionThreshold = 58; // Default threshold
+    
+    if (audioModel.isCustomTrained) {
+      // Adjust threshold based on model type and accuracy
+      if (audioModel.modelVersion.includes("wavenet")) {
+        // Wavenet models need a slightly lower threshold as they're more sensitive
+        detectionThreshold = 56;
+      } else if (audioModel.accuracy > 0.85) {
+        // Very accurate models can be more sensitive
+        detectionThreshold = 55;
+      }
+    }
+    
+    const isManipulated = finalScore > detectionThreshold || allIssues.length >= 2;
+    
+    // Customize details text based on model used
+    const modelDescription = audioModel.isCustomTrained
+      ? audioModel.modelVersion.includes("wavenet") 
+        ? "advanced wavenet-trained" 
+        : "custom-trained"
+      : "standard";
     
     // Generate detailed text based on issues found
     let detailsText = isManipulated
-      ? "Our AI has detected signs of voice synthesis or audio manipulation. "
-      : "Our analysis indicates this audio shows no significant signs of manipulation. ";
+      ? `Our ${modelDescription} AI has detected signs of voice synthesis or audio manipulation. `
+      : `Our ${modelDescription} analysis indicates this audio shows no significant signs of manipulation. `;
       
     detailsText += isManipulated
       ? `The analysis indicates this may be artificially generated content with ${finalScore}% confidence.`

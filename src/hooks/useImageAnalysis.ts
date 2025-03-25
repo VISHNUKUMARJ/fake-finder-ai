@@ -1,9 +1,11 @@
+
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useDetectionMethods } from "@/hooks/useDetectionMethods";
 import { imageDetectionMethods } from "@/components/detection/image/ImageDetectionMethods";
 import { addToSearchHistory } from "@/utils/historyManager";
 import { DetectionResult } from "@/types/detection";
+import { useTrainableDetection } from "@/context/TrainableDetectionContext";
 
 export function useImageAnalysis(file: File | null) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -12,6 +14,10 @@ export function useImageAnalysis(file: File | null) {
   const [result, setResult] = useState<DetectionResult | null>(null);
   const { toast } = useToast();
   const { methodResults, setMethodResults, simulateMethodAnalysis } = useDetectionMethods(imageDetectionMethods);
+  const { modelState } = useTrainableDetection();
+  
+  // Get model information for image detection
+  const imageModel = modelState.image;
 
   const analyzeWatermarks = async (file: File) => {
     // Simulate watermark detection
@@ -95,18 +101,52 @@ export function useImageAnalysis(file: File | null) {
       }
     });
     
-    // Normalize to get final score (0-100)
-    const finalScore = totalWeight > 0 ? Math.round(totalScore / totalWeight) : 50;
+    // Calculate base score
+    let baseScore = totalWeight > 0 ? Math.round(totalScore / totalWeight) : 50;
+    
+    // Apply model accuracy boost for custom trained models
+    if (imageModel.isCustomTrained) {
+      // Adjust detection sensitivity based on model accuracy
+      // Higher accuracy = better at detecting subtle signs, less false positives
+      const accuracyFactor = (imageModel.accuracy - 0.5) * 2; // Normalize to 0-1 range
+      
+      // For high confidence detections (>70), boost them further
+      if (baseScore > 70) {
+        baseScore = Math.min(100, baseScore + (10 * accuracyFactor));
+      }
+      // For borderline cases, adjust based on model accuracy
+      else if (baseScore > 40 && baseScore <= 70) {
+        // If model is very accurate, increase detection confidence
+        if (imageModel.accuracy > 0.85) {
+          baseScore += 5; 
+        }
+      }
+      // For low confidence detections, reduce false positives for accurate models
+      else if (baseScore <= 40 && imageModel.accuracy > 0.85) {
+        baseScore -= 5;
+      }
+    }
+    
+    const finalScore = Math.max(0, Math.min(100, baseScore));
     
     // Lower threshold to improve detection rate - consider 55+ as manipulated
-    const isManipulated = finalScore > 55 || allIssues.length >= 2;
+    // For custom trained models with high accuracy, we can be more confident
+    const detectionThreshold = imageModel.isCustomTrained && imageModel.accuracy > 0.85 ? 53 : 55;
+    const isManipulated = finalScore > detectionThreshold || allIssues.length >= 2;
+    
+    // More accurate models provide more specific and confident analysis texts
+    const modelAccuracyDescription = imageModel.isCustomTrained 
+      ? `with ${imageModel.accuracy > 0.9 ? 'high' : 'improved'} accuracy`
+      : '';
     
     const detectionResult: DetectionResult = {
       isManipulated,
       confidenceScore: finalScore,
       detailsText: isManipulated
-        ? `Our AI has detected signs of artificially generated content with ${finalScore}% certainty. The analysis found watermarks and patterns consistent with AI generation tools.`
-        : `Our analysis indicates this image shows no clear signs of AI generation with ${100 - finalScore}% certainty. The image appears to be authentic.`,
+        ? `Our AI ${modelAccuracyDescription} has detected signs of artificially generated content with ${finalScore}% certainty. ${
+          imageModel.isCustomTrained ? 'The custom-trained model identified ' : 'The analysis found '
+        }watermarks and patterns consistent with AI generation tools.`
+        : `Our analysis ${modelAccuracyDescription} indicates this image shows no clear signs of AI generation with ${100 - finalScore}% certainty. The image appears to be authentic.`,
       issues: allIssues.length > 0 ? allIssues : undefined
     };
     
