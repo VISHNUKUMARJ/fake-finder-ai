@@ -6,13 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Rocket, ImageIcon, Film, Mic, TextQuote } from "lucide-react";
 import { ModelStatusCard } from "@/components/dashboard/ModelStatusCard";
 import { useState, useEffect } from "react";
-import { SearchHistoryItem, getHistoryItems } from "@/utils/historyManager";
+import { SearchHistoryItem, getSearchHistory } from "@/utils/historyManager";
 
 const Dashboard = () => {
   const [historyItems, setHistoryItems] = useState<SearchHistoryItem[]>([]);
   
   const loadHistoryItems = async () => {
-    const items = await getHistoryItems();
+    const items = await getSearchHistory();
     setHistoryItems(items);
   };
   
