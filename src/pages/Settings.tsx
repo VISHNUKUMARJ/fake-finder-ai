@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { createContext, useContext, ReactNode } from "react";
@@ -8,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -17,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { LogOut, Sun, Moon, Languages } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTrainableDetection } from "@/context/TrainableDetectionContext";
+import { UserManagement } from "@/components/admin/UserManagement";
 
 export const LanguageContext = createContext<{
   language: string;
@@ -158,236 +157,156 @@ const Settings = () => {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    localStorage.removeItem("fakefinder_isLoggedIn");
-    localStorage.removeItem("fakefinder_user");
-    toast({
-      title: translate("loggedOut"),
-      description: translate("loggedOutMessage"),
-    });
-    navigate("/login");
-  };
-
-  return (
-    <AppLayout title="Settings">
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>{translate("appearance")}</CardTitle>
-            <CardDescription>
-              {translate("customizeAppearance")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="p-2 rounded-full bg-primary/10">
-                  {theme === "dark" ? (
-                    <Moon className="h-5 w-5 text-primary" />
-                  ) : (
-                    <Sun className="h-5 w-5 text-primary" />
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="theme-mode" className="text-base">
-                    {translate("darkMode")}
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    {translate("switchThemes")}
-                  </p>
-                </div>
-              </div>
-              <Switch
-                id="theme-mode"
-                checked={theme === "dark"}
-                onCheckedChange={handleThemeChange}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>{translate("language")}</CardTitle>
-            <CardDescription>
-              {translate("chooseLanguage")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="p-2 rounded-full bg-primary/10">
-                  <Languages className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <Label htmlFor="language-select" className="text-base">
-                    {translate("displayLanguage")}
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    {translate("selectLanguage")}
-                  </p>
-                </div>
-              </div>
-              <Select value={language} onValueChange={handleLanguageChange}>
-                <SelectTrigger className="w-[180px]" id="language-select">
-                  <SelectValue placeholder={translate("selectLanguage")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="english">English</SelectItem>
-                  <SelectItem value="spanish">Español</SelectItem>
-                  <SelectItem value="french">Français</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>{translate("account")}</CardTitle>
-            <CardDescription>
-              {translate("manageAccount")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <Separator />
-              <div className="flex flex-col">
-                <Button 
-                  variant="destructive" 
-                  className="mt-4 flex items-center"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  {translate("logout")}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {isAdmin && (
-          <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl">Admin Settings</CardTitle>
-                <CardDescription>Manage administrative privileges</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <AdminUserManagement />
-              </CardContent>
-            </Card>
-          </div>
-        )}
-      </div>
-    </AppLayout>
-  );
-};
-
-const AdminUserManagement = () => {
-  const [users, setUsers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { promoteToAdmin } = useTrainableDetection();
-  const { toast } = useToast();
-
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .order('created_at', { ascending: false });
-          
-        if (error) throw error;
-        setUsers(data || []);
-      } catch (error) {
-        console.error('Error fetching users:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchUsers();
-  }, []);
-
-  const handlePromoteToAdmin = async (userId: string, userName: string) => {
-    const success = await promoteToAdmin(userId);
-    
-    if (success) {
+    try {
+      localStorage.removeItem("fakefinder_isLoggedIn");
+      localStorage.removeItem("fakefinder_user");
+      
+      await supabase.auth.signOut();
+      
       toast({
-        title: "User promoted",
-        description: `${userName} is now an admin`,
+        title: translate("loggedOut"),
+        description: translate("loggedOutMessage"),
       });
       
-      setUsers(users.map(user => 
-        user.id === userId ? { ...user, is_admin: true } : user
-      ));
-    } else {
+      setTimeout(() => {
+        navigate("/login");
+      }, 300);
+      
+    } catch (error) {
+      console.error("Logout error:", error);
       toast({
-        title: "Promotion failed",
-        description: "Failed to promote user to admin",
+        title: "Logout failed",
+        description: "There was an error logging out. Please try again.",
         variant: "destructive",
       });
     }
   };
 
-  if (loading) {
-    return <div className="p-4 text-center">Loading users...</div>;
-  }
-
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-medium">User Management</h3>
-      <div className="border rounded-md">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.map(user => (
-              <TableRow key={user.id}>
-                <TableCell>{user.name || 'N/A'}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>
-                  {user.is_admin ? (
-                    <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                      Admin
-                    </span>
-                  ) : (
-                    <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                      User
-                    </span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {!user.is_admin && (
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => handlePromoteToAdmin(user.id, user.name || user.email)}
-                    >
-                      Make Admin
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-            {users.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={4} className="text-center py-4">
-                  No users found
-                </TableCell>
-              </TableRow>
+    <AppLayout title="Settings">
+      <div className="space-y-6">
+        <Tabs defaultValue="appearance" className="w-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="appearance">
+              {translate("appearance")}
+            </TabsTrigger>
+            <TabsTrigger value="account">
+              {translate("account")}
+            </TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger value="admin">
+                Admin Dashboard
+              </TabsTrigger>
             )}
-          </TableBody>
-        </Table>
+          </TabsList>
+          
+          <TabsContent value="appearance" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>{translate("appearance")}</CardTitle>
+                <CardDescription>
+                  {translate("customizeAppearance")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-2 rounded-full bg-primary/10">
+                      {theme === "dark" ? (
+                        <Moon className="h-5 w-5 text-primary" />
+                      ) : (
+                        <Sun className="h-5 w-5 text-primary" />
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="theme-mode" className="text-base">
+                        {translate("darkMode")}
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        {translate("switchThemes")}
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    id="theme-mode"
+                    checked={theme === "dark"}
+                    onCheckedChange={handleThemeChange}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>{translate("language")}</CardTitle>
+                <CardDescription>
+                  {translate("chooseLanguage")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-2 rounded-full bg-primary/10">
+                      <Languages className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <Label htmlFor="language-select" className="text-base">
+                        {translate("displayLanguage")}
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        {translate("selectLanguage")}
+                      </p>
+                    </div>
+                  </div>
+                  <Select value={language} onValueChange={handleLanguageChange}>
+                    <SelectTrigger className="w-[180px]" id="language-select">
+                      <SelectValue placeholder={translate("selectLanguage")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="english">English</SelectItem>
+                      <SelectItem value="spanish">Español</SelectItem>
+                      <SelectItem value="french">Français</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="account" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>{translate("account")}</CardTitle>
+                <CardDescription>
+                  {translate("manageAccount")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <Separator />
+                  <div className="flex flex-col">
+                    <Button 
+                      variant="destructive" 
+                      className="mt-4 flex items-center"
+                      onClick={handleLogout}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      {translate("logout")}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {isAdmin && (
+            <TabsContent value="admin">
+              <UserManagement />
+            </TabsContent>
+          )}
+        </Tabs>
       </div>
-    </div>
+    </AppLayout>
   );
 };
 

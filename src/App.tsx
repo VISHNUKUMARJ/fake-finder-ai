@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,6 +17,7 @@ import AudioDetection from "./pages/AudioDetection";
 import Profile from "./pages/Profile";
 import Settings, { LanguageProvider } from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import { AIAssistant } from "./components/chat/AIAssistant";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -80,11 +82,17 @@ const App = () => {
     
     // Check if the user is authenticated
     const checkAuth = async () => {
-      const { data } = await supabase.auth.getSession();
-      setIsAuthenticated(!!data.session);
-      
-      // Set localStorage flag for backward compatibility
-      localStorage.setItem("fakefinder_isLoggedIn", data.session ? "true" : "false");
+      try {
+        const { data } = await supabase.auth.getSession();
+        setIsAuthenticated(!!data.session);
+        
+        // Set localStorage flag for backward compatibility
+        localStorage.setItem("fakefinder_isLoggedIn", data.session ? "true" : "false");
+      } catch (error) {
+        console.error("Error checking auth:", error);
+        setIsAuthenticated(false);
+        localStorage.setItem("fakefinder_isLoggedIn", "false");
+      }
     };
     
     checkAuth();
@@ -169,6 +177,9 @@ const App = () => {
                 {/* Catch-all route */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              
+              {/* AI Assistant that is available on all pages */}
+              <AIAssistant />
             </BrowserRouter>
           </TooltipProvider>
         </TrainableDetectionProvider>

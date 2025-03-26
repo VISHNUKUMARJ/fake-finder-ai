@@ -15,8 +15,38 @@ const SignUp = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Password validation
+  const validatePassword = (password: string) => {
+    const minLength = 12;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSymbol = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+    
+    if (password.length < minLength) {
+      return "Password must be at least 12 characters long";
+    }
+    if (!hasUpperCase) {
+      return "Password must contain at least one uppercase letter";
+    }
+    if (!hasNumber) {
+      return "Password must contain at least one number";
+    }
+    if (!hasSymbol) {
+      return "Password must contain at least one symbol";
+    }
+    
+    return ""; // No error
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPassword = e.target.value;
+    setPassword(newPassword);
+    setPasswordError(validatePassword(newPassword));
+  };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,9 +60,42 @@ const SignUp = () => {
       return;
     }
     
+    // Validate password
+    const passwordValidationError = validatePassword(password);
+    if (passwordValidationError) {
+      setPasswordError(passwordValidationError);
+      toast({
+        title: "Invalid password",
+        description: passwordValidationError,
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
+      // Check if email already exists
+      const { data: existingUsers, error: checkError } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('email', email)
+        .limit(1);
+      
+      if (checkError) {
+        throw checkError;
+      }
+      
+      if (existingUsers && existingUsers.length > 0) {
+        toast({
+          title: "Email already in use",
+          description: "This email is already registered. Please use a different email or try logging in.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
       // Sign up with Supabase
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -45,6 +108,15 @@ const SignUp = () => {
       });
       
       if (error) {
+        if (error.message.includes("already registered")) {
+          toast({
+            title: "Email already in use",
+            description: "This email is already registered. Please use a different email or try logging in.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
         throw error;
       }
       
@@ -140,9 +212,16 @@ const SignUp = () => {
                 id="password"
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={handlePasswordChange}
                 required
+                className={passwordError ? "border-red-500" : ""}
               />
+              {passwordError && (
+                <p className="text-sm text-red-500">{passwordError}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Password must be at least 12 characters with 1 uppercase letter, 1 number, and 1 symbol
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm Password</Label>

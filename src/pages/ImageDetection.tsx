@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,9 +10,12 @@ import { ResultExplanation } from "@/components/detection/ResultExplanation";
 import { useImageAnalysis } from "@/hooks/useImageAnalysis";
 import { imageDetectionMethods } from "@/components/detection/image/ImageDetectionMethods";
 import { DetectionModeSelector } from "@/components/detection/DetectionModeSelector";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 const ImageDetection = () => {
   const [file, setFile] = useState<File | null>(null);
+  const { toast } = useToast();
   const {
     isAnalyzing,
     progress,
@@ -21,6 +25,37 @@ const ImageDetection = () => {
     result,
     handleAnalyze
   } = useImageAnalysis(file);
+
+  // Function to save detection results to history
+  const saveToHistory = async (result: any) => {
+    if (!file || !result) return;
+    
+    try {
+      // Get current user
+      const currentUserStr = localStorage.getItem("fakefinder_user");
+      if (!currentUserStr) return;
+      
+      const currentUser = JSON.parse(currentUserStr);
+      
+      // Create search history entry
+      await supabase.from('search_history').insert({
+        user_id: currentUser.id,
+        filename: file.name,
+        type: 'image',
+        result: result.fake,
+        confidence_score: result.confidence || 0.5
+      });
+    } catch (error) {
+      console.error("Error saving to history:", error);
+    }
+  };
+
+  // Save results when analysis is complete
+  useEffect(() => {
+    if (result && file) {
+      saveToHistory(result);
+    }
+  }, [result, file]);
 
   const handleFileSelected = (selectedFile: File) => {
     setFile(selectedFile);
@@ -83,4 +118,5 @@ const ImageDetection = () => {
     </AppLayout>
   );
 };
+
 export default ImageDetection;
