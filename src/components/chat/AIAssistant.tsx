@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Bot, Send, X, Minimize, Maximize, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
-import { useLanguage } from "@/pages/Settings";
+import { useLanguage } from "@/context/LanguageContext";
 
 type Message = {
   id: string;
