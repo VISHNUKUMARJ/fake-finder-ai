@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,9 +11,12 @@ import { TextScoreDisplay } from "@/components/detection/text/TextScoreDisplay";
 import { useTextAnalysis } from "@/hooks/useTextAnalysis";
 import { textDetectionMethods } from "@/components/detection/text/TextDetectionMethods";
 import { DetectionModeSelector } from "@/components/detection/DetectionModeSelector";
+import { useToast } from "@/components/ui/use-toast";
+import { X } from "lucide-react";
 
 const TextDetection = () => {
   const [text, setText] = useState("");
+  const { toast } = useToast();
   const {
     isAnalyzing,
     progress,
@@ -22,6 +26,19 @@ const TextDetection = () => {
     result,
     handleAnalyze
   } = useTextAnalysis(text);
+
+  const handleClear = () => {
+    setText("");
+    if (result) {
+      // Reload the page to reset analysis state
+      window.location.reload();
+    } else {
+      toast({
+        title: "Cleared",
+        description: "Text has been cleared.",
+      });
+    }
+  };
 
   const explanationMethods = textDetectionMethods.map(method => ({
     name: method.name,
@@ -97,7 +114,7 @@ const TextDetection = () => {
               </p>
             )}
             
-            <div className="mt-6 flex justify-center">
+            <div className="mt-6 flex justify-center gap-4">
               <Button 
                 onClick={handleAnalyze} 
                 className="px-8"
@@ -105,6 +122,13 @@ const TextDetection = () => {
               >
                 {isAnalyzing ? "Analyzing..." : "Analyze Text"}
               </Button>
+              
+              {text.length > 0 && (
+                <Button variant="clear" onClick={handleClear} disabled={isAnalyzing}>
+                  <X className="mr-1" />
+                  Clear
+                </Button>
+              )}
             </div>
             
             {isAnalyzing && (
@@ -119,10 +143,18 @@ const TextDetection = () => {
             {renderTextResultAlert()}
             
             {result && (
-              <ResultExplanation 
-                title="Understanding Text Analysis" 
-                methods={explanationMethods} 
-              />
+              <div>
+                <div className="mt-6 flex justify-center">
+                  <Button variant="clear" onClick={handleClear}>
+                    <X className="mr-1" />
+                    Clear Results
+                  </Button>
+                </div>
+                <ResultExplanation 
+                  title="Understanding Text Analysis" 
+                  methods={explanationMethods} 
+                />
+              </div>
             )}
           </CardContent>
         </Card>

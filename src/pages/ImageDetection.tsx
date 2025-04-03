@@ -12,6 +12,7 @@ import { imageDetectionMethods } from "@/components/detection/image/ImageDetecti
 import { DetectionModeSelector } from "@/components/detection/DetectionModeSelector";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { X } from "lucide-react";
 
 const ImageDetection = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -23,7 +24,8 @@ const ImageDetection = () => {
     setActiveMethod,
     methodResults,
     result,
-    handleAnalyze
+    handleAnalyze,
+    resetAnalysis
   } = useImageAnalysis(file);
 
   // Function to save detection results to history
@@ -61,6 +63,15 @@ const ImageDetection = () => {
     setFile(selectedFile);
   };
 
+  const handleClear = () => {
+    setFile(null);
+    resetAnalysis();
+    toast({
+      title: "Cleared",
+      description: "Analysis and uploaded image have been cleared.",
+    });
+  };
+
   const explanationMethods = imageDetectionMethods.map(method => ({
     name: method.name,
     description: method.description || ""
@@ -88,9 +99,13 @@ const ImageDetection = () => {
             />
             
             {file && !isAnalyzing && !result && (
-              <div className="mt-6 flex justify-center">
+              <div className="mt-6 flex justify-center gap-4">
                 <Button onClick={handleAnalyze} className="px-8">
                   Analyze Image
+                </Button>
+                <Button variant="clear" onClick={handleClear}>
+                  <X className="mr-1" />
+                  Clear
                 </Button>
               </div>
             )}
@@ -102,6 +117,15 @@ const ImageDetection = () => {
                 methodResults={methodResults}
                 methods={imageDetectionMethods}
               />
+            )}
+            
+            {result && (
+              <div className="mt-6 flex justify-center">
+                <Button variant="clear" onClick={handleClear}>
+                  <X className="mr-1" />
+                  Clear Results
+                </Button>
+              </div>
             )}
             
             <ResultAlert result={result} color="red" />

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,9 +10,12 @@ import { ResultExplanation } from "@/components/detection/ResultExplanation";
 import { useVideoAnalysis } from "@/hooks/useVideoAnalysis";
 import { videoDetectionMethods } from "@/components/detection/video/VideoDetectionMethods";
 import { DetectionModeSelector } from "@/components/detection/DetectionModeSelector";
+import { useToast } from "@/components/ui/use-toast";
+import { X } from "lucide-react";
 
 const VideoDetection = () => {
   const [file, setFile] = useState<File | null>(null);
+  const { toast } = useToast();
   const {
     isAnalyzing,
     progress,
@@ -24,6 +28,19 @@ const VideoDetection = () => {
 
   const handleFileSelected = (selectedFile: File) => {
     setFile(selectedFile);
+  };
+
+  const handleClear = () => {
+    setFile(null);
+    if (result) {
+      // Reload the page to reset analysis state
+      window.location.reload();
+    } else {
+      toast({
+        title: "Cleared",
+        description: "Uploaded video has been cleared.",
+      });
+    }
   };
 
   const explanationMethods = videoDetectionMethods.map(method => ({
@@ -53,9 +70,13 @@ const VideoDetection = () => {
             />
             
             {file && !isAnalyzing && !result && (
-              <div className="mt-6 flex justify-center">
+              <div className="mt-6 flex justify-center gap-4">
                 <Button onClick={handleAnalyze} className="px-8">
                   Analyze Video
+                </Button>
+                <Button variant="clear" onClick={handleClear}>
+                  <X className="mr-1" />
+                  Clear
                 </Button>
               </div>
             )}
@@ -67,6 +88,15 @@ const VideoDetection = () => {
                 methodResults={methodResults}
                 methods={videoDetectionMethods}
               />
+            )}
+            
+            {result && (
+              <div className="mt-6 flex justify-center">
+                <Button variant="clear" onClick={handleClear}>
+                  <X className="mr-1" />
+                  Clear Results
+                </Button>
+              </div>
             )}
             
             <ResultAlert result={result} color="red" />

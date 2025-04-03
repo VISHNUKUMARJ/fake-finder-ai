@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useDetectionMethods } from "@/hooks/useDetectionMethods";
@@ -18,6 +17,19 @@ export function useImageAnalysis(file: File | null) {
   
   // Get model information for image detection
   const imageModel = modelState.image;
+
+  const resetAnalysis = () => {
+    setResult(null);
+    setProgress(0);
+    setActiveMethod("");
+    setIsAnalyzing(false);
+    imageDetectionMethods.forEach(method => {
+      setMethodResults(prev => ({
+        ...prev,
+        [method.name]: { score: 0, complete: false }
+      }));
+    });
+  };
 
   const analyzeWatermarks = async (file: File) => {
     // Simulate watermark detection
@@ -217,6 +229,7 @@ export function useImageAnalysis(file: File | null) {
     setActiveMethod,
     methodResults,
     result,
-    handleAnalyze
+    handleAnalyze,
+    resetAnalysis
   };
 }
