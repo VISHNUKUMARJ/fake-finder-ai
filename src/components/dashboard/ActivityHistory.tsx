@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { 
   Card, 
@@ -97,13 +96,11 @@ const ActivityHistory: React.FC<ActivityHistoryProps> = ({ items, onDelete }) =>
     setIsClearAllDialogOpen(false);
   };
 
-  // Format date for display
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleString();
   };
 
-  // Get detection type badge
   const getTypeBadge = (type: string) => {
     switch (type) {
       case 'image':
@@ -117,6 +114,10 @@ const ActivityHistory: React.FC<ActivityHistoryProps> = ({ items, onDelete }) =>
       default:
         return <Badge variant="outline">{type}</Badge>;
     }
+  };
+
+  const formatConfidence = (item: SearchHistoryItem) => {
+    return Math.round(item.result ? item.confidenceScore : (100 - item.confidenceScore));
   };
 
   return (
@@ -165,10 +166,10 @@ const ActivityHistory: React.FC<ActivityHistoryProps> = ({ items, onDelete }) =>
                     </TableCell>
                     <TableCell>
                       <Badge variant={item.result ? "destructive" : "default"}>
-                        {item.result ? "Fake" : "Real"}
+                        {item.result ? "AI-Generated" : "Authentic"}
                       </Badge>
                       <span className="ml-2 text-xs text-muted-foreground">
-                        {Math.round(item.confidenceScore * 100)}%
+                        {formatConfidence(item)}%
                       </span>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
@@ -193,7 +194,6 @@ const ActivityHistory: React.FC<ActivityHistoryProps> = ({ items, onDelete }) =>
         )}
       </CardContent>
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -211,7 +211,6 @@ const ActivityHistory: React.FC<ActivityHistoryProps> = ({ items, onDelete }) =>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Clear All Confirmation Dialog */}
       <AlertDialog open={isClearAllDialogOpen} onOpenChange={setIsClearAllDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

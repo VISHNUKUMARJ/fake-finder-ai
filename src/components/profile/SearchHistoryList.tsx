@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Search, AlertCircle, ImageIcon, FileVideo, FileAudio, FileText, AlertTriangle, CheckCircle2, Trash2 } from "lucide-react";
@@ -80,6 +79,11 @@ export const SearchHistoryList = ({ searchHistory, onDelete }: SearchHistoryList
     setItemToDelete(null);
   };
 
+  const formatConfidence = (item: SearchHistoryItem) => {
+    const confidence = Math.round(item.confidenceScore);
+    return item.result ? `${confidence}%` : `${100 - confidence}%`;
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -129,12 +133,12 @@ export const SearchHistoryList = ({ searchHistory, onDelete }: SearchHistoryList
                   {item.result ? (
                     <span className="text-red-500 flex items-center text-sm">
                       <AlertTriangle className="h-4 w-4 mr-1" />
-                      Manipulated content detected ({item.confidenceScore}% confidence)
+                      AI-Generated/Manipulated ({formatConfidence(item)})
                     </span>
                   ) : (
                     <span className="text-green-500 flex items-center text-sm">
                       <CheckCircle2 className="h-4 w-4 mr-1" />
-                      Authentic content ({item.confidenceScore}% confidence)
+                      Authentic ({formatConfidence(item)})
                     </span>
                   )}
                 </div>
@@ -152,7 +156,6 @@ export const SearchHistoryList = ({ searchHistory, onDelete }: SearchHistoryList
         )}
       </CardContent>
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
