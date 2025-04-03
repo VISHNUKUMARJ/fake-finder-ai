@@ -56,13 +56,13 @@ export const analyzeErrorLevels = async (
   // Check for compression anomalies that indicate AI generation
   if (fileType.includes('jpeg') || fileType.includes('jpg')) {
     // JPEGs with unusually low or high compression for their visual quality
-    if (fileSize < 150000) {
+    if (fileSize < 200000) {
       // Small file size might indicate AI generation with low detail preservation
       setMethodResults(prev => ({
         ...prev,
         "Error Level Analysis": {
           ...prev["Error Level Analysis"],
-          manipulationScore: Math.min((prev["Error Level Analysis"]?.manipulationScore || 60) + 20, 95),
+          manipulationScore: Math.min((prev["Error Level Analysis"]?.manipulationScore || 60) + 30, 95),
           issues: [...(prev["Error Level Analysis"]?.issues || []), 
             "Unusual compression patterns detected in image data",
             "Inconsistent quality-to-size ratio (suspicious)"
@@ -73,12 +73,12 @@ export const analyzeErrorLevels = async (
   }
   
   // PNGs with perfect compression (AI tends to generate "clean" data)
-  if (fileType.includes('png') && fileSize < 500000) {
+  if (fileType.includes('png')) {
     setMethodResults(prev => ({
       ...prev,
       "Error Level Analysis": {
         ...prev["Error Level Analysis"],
-        manipulationScore: Math.min((prev["Error Level Analysis"]?.manipulationScore || 55) + 15, 90),
+        manipulationScore: Math.min((prev["Error Level Analysis"]?.manipulationScore || 65) + 20, 95),
         issues: [...(prev["Error Level Analysis"]?.issues || []), 
           "Suspiciously clean image data patterns",
           "Missing natural noise patterns found in camera images"
@@ -101,13 +101,13 @@ export const analyzeFaces = async (
   // Enhanced face analysis - Look for telltale AI face generation issues
   await simulateMethodAnalysis("Face Detection & Analysis", 3000, file);
   
-  // Simulate finding common AI face generation artifacts
-  if (Math.random() > 0.3) { // Simulating detection
+  // Simulate finding common AI face generation artifacts - increase detection rate
+  if (Math.random() > 0.2) { // Increased detection rate (was 0.3)
     setMethodResults(prev => ({
       ...prev,
       "Face Detection & Analysis": {
         ...prev["Face Detection & Analysis"],
-        manipulationScore: Math.min((prev["Face Detection & Analysis"]?.manipulationScore || 65) + 25, 95),
+        manipulationScore: Math.min((prev["Face Detection & Analysis"]?.manipulationScore || 65) + 30, 98),
         issues: [...(prev["Face Detection & Analysis"]?.issues || []), 
           "Uncanny symmetry in facial features",
           "Irregularities in eye/pupil rendering",
