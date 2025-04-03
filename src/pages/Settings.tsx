@@ -6,17 +6,33 @@ import { useTrainableDetection } from "@/context/TrainableDetectionContext";
 import { AppearanceSettings } from "@/components/settings/AppearanceSettings";
 import { AccountSettings } from "@/components/settings/AccountSettings";
 import { LanguageProvider } from "@/context/LanguageContext";
+import { useEffect, useState } from "react";
+import { useToast } from "@/components/ui/use-toast";
 
 // Re-export for backward compatibility
 export { LanguageProvider } from "@/context/LanguageContext";
 
 const Settings = () => {
   const { isAdmin } = useTrainableDetection();
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("appearance");
+  
+  // If user tries to access admin tab but isn't an admin, switch to appearance tab
+  useEffect(() => {
+    if (activeTab === "admin" && !isAdmin) {
+      setActiveTab("appearance");
+      toast({
+        variant: "destructive",
+        title: "Access Denied",
+        description: "Only administrators can access the admin dashboard.",
+      });
+    }
+  }, [activeTab, isAdmin, toast]);
 
   return (
     <AppLayout title="Settings">
       <div className="space-y-6">
-        <Tabs defaultValue="appearance" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="mb-4">
             <TabsTrigger value="appearance">
               Appearance

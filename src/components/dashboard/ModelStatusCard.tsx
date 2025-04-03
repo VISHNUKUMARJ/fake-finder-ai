@@ -1,14 +1,16 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { Brain, BarChart, Zap, Globe, Lock } from "lucide-react";
+import { Brain, BarChart, Zap, Globe, Lock, ShieldAlert } from "lucide-react";
 import { DetectionType } from "@/types/detection";
 import { useTrainableDetection } from "@/context/TrainableDetectionContext";
 import { TrainingMode } from "@/components/detection/TrainingMode";
 import { OnlineDatasetTraining } from "@/components/detection/OnlineDatasetTraining";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/components/ui/use-toast";
 
 interface ModelStatusCardProps {
   type: DetectionType;
@@ -19,6 +21,40 @@ export const ModelStatusCard = ({ type }: ModelStatusCardProps) => {
   const model = modelState[type];
   const [dialogOpen, setDialogOpen] = useState(false);
   const [trainingMode, setTrainingMode] = useState<"custom" | "online">("custom");
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  // Redirect non-admin users if they somehow access this component
+  useEffect(() => {
+    if (!checkingAdminStatus && !isAdmin) {
+      toast({
+        variant: "destructive",
+        title: "Access Denied",
+        description: "Only administrators can view and train models.",
+      });
+      navigate('/dashboard');
+    }
+  }, [isAdmin, checkingAdminStatus, navigate, toast]);
+
+  // If user is not an admin, show an access denied card
+  if (!isAdmin && !checkingAdminStatus) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <ShieldAlert className="h-5 w-5 text-red-500" />
+            Access Denied
+          </CardTitle>
+          <CardDescription>Administrator access required</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">
+            You need administrator privileges to view model status.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const typeLabels: Record<DetectionType, string> = {
     image: "Image",
@@ -143,3 +179,4 @@ export const ModelStatusCard = ({ type }: ModelStatusCardProps) => {
     </Card>
   );
 };
+

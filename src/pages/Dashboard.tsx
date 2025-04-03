@@ -7,9 +7,11 @@ import { Rocket, ImageIcon, Film, Mic, TextQuote } from "lucide-react";
 import { ModelStatusCard } from "@/components/dashboard/ModelStatusCard";
 import { useState, useEffect } from "react";
 import { SearchHistoryItem, getSearchHistory } from "@/utils/historyManager";
+import { useTrainableDetection } from "@/context/TrainableDetectionContext";
 
 const Dashboard = () => {
   const [historyItems, setHistoryItems] = useState<SearchHistoryItem[]>([]);
+  const { isAdmin } = useTrainableDetection();
   
   const loadHistoryItems = async () => {
     const items = await getSearchHistory();
@@ -87,16 +89,18 @@ const Dashboard = () => {
           </div>
         </div>
         
-        {/* Model Status */}
-        <div>
-          <h2 className="text-2xl font-bold mb-4">Model Status</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <ModelStatusCard type="image" />
-            <ModelStatusCard type="video" />
-            <ModelStatusCard type="audio" />
-            <ModelStatusCard type="text" />
+        {/* Model Status - Only visible to admins */}
+        {isAdmin && (
+          <div>
+            <h2 className="text-2xl font-bold mb-4">Model Status</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <ModelStatusCard type="image" />
+              <ModelStatusCard type="video" />
+              <ModelStatusCard type="audio" />
+              <ModelStatusCard type="text" />
+            </div>
           </div>
-        </div>
+        )}
         
         {/* Recent Activity */}
         <div>
