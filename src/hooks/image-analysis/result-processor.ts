@@ -22,12 +22,12 @@ export const processResults = (
   imageDetectionMethods.forEach(method => {
     const methodResult = methodResults[method.name];
     if (methodResult && methodResult.complete) {
-      const manipulationScore = methodResult.manipulationScore || Math.random() * 60 + 30; // Higher base score for detection
+      const manipulationScore = methodResult.manipulationScore || Math.random() * 35 + 20; // Lower base score to reduce false positives
       totalScore += manipulationScore * method.weight;
       totalWeight += method.weight;
       
-      // Check for strong evidence of manipulation
-      if (manipulationScore > 80) {
+      // Set threshold higher for strong evidence
+      if (manipulationScore > 85) {
         hasStrongManipulationEvidence = true;
       }
       
@@ -38,23 +38,23 @@ export const processResults = (
     }
   });
   
-  // Calculate base score with improved algorithm - higher sensitivity
-  let baseScore = totalWeight > 0 ? Math.round(totalScore / totalWeight) : 65; // Increased base score
+  // Calculate base score with more balanced algorithm
+  let baseScore = totalWeight > 0 ? Math.round(totalScore / totalWeight) : 50; // Moderated base score
   
   // Apply model accuracy boost for custom trained models
   if (imageModel.isCustomTrained) {
     // Adjust detection sensitivity based on model accuracy
     const accuracyFactor = (imageModel.accuracy - 0.5) * 2; // Normalize to 0-1 range
     
-    // For high confidence detections (>65), boost them further
-    if (baseScore > 65) { // Lowered threshold (was 70)
-      baseScore = Math.min(100, baseScore + (12 * accuracyFactor)); // Increased boost
+    // For high confidence detections, boost them further but more cautiously
+    if (baseScore > 70) { 
+      baseScore = Math.min(100, baseScore + (10 * accuracyFactor)); 
     }
     // For borderline cases, adjust based on model accuracy
-    else if (baseScore > 40 && baseScore <= 65) {
+    else if (baseScore > 45 && baseScore <= 70) {
       // If model is very accurate, increase detection confidence
-      if (imageModel.accuracy > 0.80) { // Lowered threshold
-        baseScore += 15; // Increased boost
+      if (imageModel.accuracy > 0.85) { 
+        baseScore += 10; 
       }
     }
   }
@@ -64,21 +64,21 @@ export const processResults = (
     !issue.includes("might") && !issue.includes("possible") && !issue.includes("could be")
   ).length;
   
-  // Apply filename-based boosts
+  // Apply filename-based boosts, but more cautiously
   if (file && checkFilenameForAIGeneration(file.name)) {
-    baseScore += 15;
+    baseScore += 10; // Reduced boost
   }
   
   // Cap the final score
   const finalScore = Math.max(0, Math.min(100, baseScore));
   
-  // More aggressive detection thresholds
-  const detectionThreshold = imageModel.isCustomTrained && imageModel.accuracy > 0.85 ? 45 : 48; // Lowered thresholds
+  // More balanced detection thresholds
+  const detectionThreshold = imageModel.isCustomTrained && imageModel.accuracy > 0.9 ? 55 : 65; // Higher thresholds to reduce false positives
   
   // Determine if the image is manipulated based on score, evidence, or issue count
   const isManipulated = finalScore > detectionThreshold || 
                        hasStrongManipulationEvidence || 
-                       significantIssueCount >= 2;
+                       significantIssueCount >= 3; // Require more issues
   
   // More specific and confident analysis texts
   const modelAccuracyDescription = imageModel.isCustomTrained 
@@ -119,5 +119,14 @@ function checkFilenameForAIGeneration(filename: string): boolean {
     'deepfake', 'gpt', 'artificial', 'neural', 'gan', 'stylegan', 'diffusion'
   ];
   
-  return aiSignifiers.some(term => lowerFilename.includes(term));
+  // More strict matching to reduce false positives
+  return aiSignifiers.some(term => 
+    lowerFilename.includes('-' + term) || 
+    lowerFilename.includes(term + '-') || 
+    lowerFilename.includes('_' + term) || 
+    lowerFilename.includes(term + '_') ||
+    lowerFilename.includes(' ' + term) || 
+    lowerFilename.includes(term + ' ') ||
+    lowerFilename === term
+  );
 }

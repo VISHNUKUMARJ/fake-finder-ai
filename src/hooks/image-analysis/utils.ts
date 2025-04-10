@@ -8,22 +8,21 @@ export const isPerfectDimensions = (file: File): Promise<boolean> => {
     const img = new Image();
     img.onload = () => {
       // Check if dimensions are perfect squares or standard AI output sizes
-      const isPerfectSquare = img.width === img.height;
+      // Only exact matches to known AI sizes
       const isStandardAISize = 
         (img.width === 512 && img.height === 512) ||
         (img.width === 1024 && img.height === 1024) ||
         (img.width === 768 && img.height === 768) ||
         (img.width === 256 && img.height === 256) ||
-        (img.width === 1024 && img.height === 1024) ||
         (img.width === 2048 && img.height === 2048) ||
-        // Add more standard Midjourney, DALL-E, and Stable Diffusion sizes
+        // Standard sizes from specific models
         (img.width === 1024 && img.height === 1792) || // DALL-E 3 portrait
         (img.width === 1792 && img.height === 1024) || // DALL-E 3 landscape
         (img.width === 1344 && img.height === 768) ||  // Midjourney standard
         (img.width === 896 && img.height === 1152);    // Midjourney portrait
       
       URL.revokeObjectURL(img.src); // Clean up
-      resolve(isPerfectSquare || isStandardAISize);
+      resolve(isStandardAISize);
     };
     img.onerror = () => {
       URL.revokeObjectURL(img.src); // Clean up
@@ -38,10 +37,11 @@ export const isPerfectDimensions = (file: File): Promise<boolean> => {
  */
 export const checkFilenameForAI = (filename: string): boolean => {
   const lowerFilename = filename.toLowerCase();
+  // More specific matching patterns to avoid false positives
   const aiSignifiers = [
-    'ai', 'generated', 'midjourney', 'mj', 'dalle', 'dall-e', 'stable-diffusion', 'sd', 
-    'synthetic', 'deepfake', 'gpt', 'artificial', 'neural', 'gan', 'stylegan', 'diffusion',
-    'leonardo', 'ai-gen', 'aiart', 'openai', 'generative'
+    '-ai-', 'ai-', '-ai', '_ai_', 'ai_', '_ai',
+    'generated-by', 'midjourney', 'dalle', 'dall-e', 
+    'stable-diffusion', 'deepfake', 'stylegan'
   ];
   
   return aiSignifiers.some(term => lowerFilename.includes(term));
@@ -54,14 +54,14 @@ export const isSuspiciouslySmall = (file: File): boolean => {
   const fileType = file.type;
   const fileSize = file.size;
   
-  // More aggressive detection for smaller files
+  // More conservative thresholds to reduce false positives
   if (fileType.includes('image/jpeg') || fileType.includes('image/jpg')) {
-    return fileSize < 150000; // JPEGs smaller than 150KB are suspicious
+    return fileSize < 80000; // JPEGs smaller than 80KB are suspicious
   }
   
   if (fileType.includes('image/png')) {
-    return fileSize < 200000; // PNGs smaller than 200KB are suspicious
+    return fileSize < 120000; // PNGs smaller than 120KB are suspicious
   }
   
-  return fileSize < 100000 && fileType.includes('image/');
+  return fileSize < 60000 && fileType.includes('image/');
 };

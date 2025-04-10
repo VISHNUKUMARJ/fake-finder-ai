@@ -13,23 +13,25 @@ export const analyzeWatermarks = async (
   // Simulate watermark detection
   const watermarkResult = await simulateMethodAnalysis("Watermark Detection", 2000, file);
   
-  // Enhanced detection for suspicious files
+  // Enhanced detection for suspicious files - but don't overweight these signals
   const hasAISignifier = checkFilenameForAI(file.name);
   const suspiciouslySmall = isSuspiciouslySmall(file);
   const perfectRatio = await isPerfectDimensions(file);
   
-  // Apply more aggressive detection for suspicious files
-  if (hasAISignifier || suspiciouslySmall || perfectRatio) {
+  // Add signals but with more reasonable weight to reduce false positives
+  if ((hasAISignifier && (suspiciouslySmall || perfectRatio)) || 
+      (suspiciouslySmall && perfectRatio)) {
+    // Only increase score when multiple indicators are present
     setMethodResults(prev => ({
       ...prev,
       "Watermark Detection": {
         ...prev["Watermark Detection"],
-        manipulationScore: Math.min((prev["Watermark Detection"]?.manipulationScore || 70) + 25, 98),
+        manipulationScore: Math.min((prev["Watermark Detection"]?.manipulationScore || 55) + 15, 90),
         issues: [...(prev["Watermark Detection"]?.issues || []), 
           "AI generation tool watermark pattern detected",
           hasAISignifier ? "AI-related terms found in filename" : "",
           suspiciouslySmall ? "Unusually small file size for image quality" : "",
-          perfectRatio ? "Suspiciously perfect image dimensions" : ""
+          perfectRatio ? "Image dimensions match common AI output formats" : ""
         ].filter(Boolean)
       }
     }));
@@ -53,34 +55,34 @@ export const analyzeErrorLevels = async (
   const fileSize = file.size;
   const fileType = file.type;
   
-  // Check for compression anomalies that indicate AI generation
+  // More conservative checks for compression anomalies
   if (fileType.includes('jpeg') || fileType.includes('jpg')) {
-    // JPEGs with unusually low or high compression for their visual quality
-    if (fileSize < 200000) {
-      // Small file size might indicate AI generation with low detail preservation
+    // Only flag very small JPEGs that are likely too small for their quality
+    if (fileSize < 100000) {  // More conservative threshold
       setMethodResults(prev => ({
         ...prev,
         "Error Level Analysis": {
           ...prev["Error Level Analysis"],
-          manipulationScore: Math.min((prev["Error Level Analysis"]?.manipulationScore || 60) + 30, 95),
+          manipulationScore: Math.min((prev["Error Level Analysis"]?.manipulationScore || 50) + 20, 85),
           issues: [...(prev["Error Level Analysis"]?.issues || []), 
             "Unusual compression patterns detected in image data",
-            "Inconsistent quality-to-size ratio (suspicious)"
+            "Inconsistent quality-to-size ratio"
           ]
         }
       }));
     }
   }
   
-  // PNGs with perfect compression (AI tends to generate "clean" data)
-  if (fileType.includes('png')) {
+  // More careful PNG analysis
+  if (fileType.includes('png') && fileSize < 150000) {
+    // Only flag unusually small PNGs
     setMethodResults(prev => ({
       ...prev,
       "Error Level Analysis": {
         ...prev["Error Level Analysis"],
-        manipulationScore: Math.min((prev["Error Level Analysis"]?.manipulationScore || 65) + 20, 95),
+        manipulationScore: Math.min((prev["Error Level Analysis"]?.manipulationScore || 55) + 15, 85),
         issues: [...(prev["Error Level Analysis"]?.issues || []), 
-          "Suspiciously clean image data patterns",
+          "Unusually clean image data patterns",
           "Missing natural noise patterns found in camera images"
         ]
       }
@@ -101,13 +103,13 @@ export const analyzeFaces = async (
   // Enhanced face analysis - Look for telltale AI face generation issues
   await simulateMethodAnalysis("Face Detection & Analysis", 3000, file);
   
-  // Simulate finding common AI face generation artifacts - increase detection rate
-  if (Math.random() > 0.2) { // Increased detection rate (was 0.3)
+  // More balanced face detection to reduce false positives
+  if (Math.random() > 0.6) { // More conservative detection rate
     setMethodResults(prev => ({
       ...prev,
       "Face Detection & Analysis": {
         ...prev["Face Detection & Analysis"],
-        manipulationScore: Math.min((prev["Face Detection & Analysis"]?.manipulationScore || 65) + 30, 98),
+        manipulationScore: Math.min((prev["Face Detection & Analysis"]?.manipulationScore || 60) + 25, 90),
         issues: [...(prev["Face Detection & Analysis"]?.issues || []), 
           "Uncanny symmetry in facial features",
           "Irregularities in eye/pupil rendering",

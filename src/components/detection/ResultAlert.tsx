@@ -62,7 +62,7 @@ export const ResultAlert = ({ result, color = "red" }: ResultAlertProps) => {
       <AlertDescription className="mt-2">
         <p>{detailsText}</p>
         <p className="mt-2">
-          <strong>Confidence score: {confidenceScore}%</strong>
+          <strong>Authenticity confidence: {100 - confidenceScore}%</strong>
         </p>
       </AlertDescription>
     </Alert>
